@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { existsSync } from "node:fs";
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
@@ -204,6 +204,45 @@ async function storePush(payload: PushPayload): Promise<{ driver: string; key: s
   return { driver: "local", key: localPath, latest_key: latestPath };
 }
 
+async function streamToString(body: unknown): Promise<string> {
+  if (!body) return "";
+  if (typeof body === "string") return body;
+  if (body instanceof Uint8Array) return Buffer.from(body).toString("utf-8");
+  const maybeStream = body as AsyncIterable<Uint8Array | Buffer | string>;
+  if (typeof maybeStream[Symbol.asyncIterator] !== "function") return String(body);
+  const chunks: Buffer[] = [];
+  for await (const chunk of maybeStream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+async function readLatestPush(companyId: string): Promise<PushPayload | null> {
+  if (!COMPANY_ID_RE.test(companyId)) {
+    throw Object.assign(new Error("Invalid company id"), { statusCode: 400 });
+  }
+  if (r2Client) {
+    const key = `${r2Prefix}/pushes/${companyId}/latest.json`;
+    try {
+      const result = await r2Client.send(new GetObjectCommand({ Bucket: r2Bucket, Key: key }));
+      const body = await streamToString(result.Body);
+      return JSON.parse(body) as PushPayload;
+    } catch (err) {
+      const name = err && typeof err === "object" && "name" in err ? String((err as { name: unknown }).name) : "";
+      if (name === "NoSuchKey" || name === "NotFound") return null;
+      throw err;
+    }
+  }
+  const latestPath = path.join(glhubDataDir, "pushes", companyId, "latest.json");
+  try {
+    return JSON.parse(await readFile(latestPath, "utf-8")) as PushPayload;
+  } catch (err) {
+    const code = err && typeof err === "object" && "code" in err ? String((err as { code: unknown }).code) : "";
+    if (code === "ENOENT" || code === "ENOTDIR") return null;
+    throw err;
+  }
+}
+
 function json(res: ServerResponse, value: JsonValue, statusCode = 200): void {
   res.writeHead(statusCode, {
     "content-type": "application/json; charset=utf-8",
@@ -243,16 +282,26 @@ function errorJson(res: ServerResponse, err: unknown): void {
 }
 
 async function companies(): Promise<string[]> {
+  const found = new Set<string>();
   const root = path.join(dataDir, "companies");
   try {
     const entries = await readdir(root, { withFileTypes: true });
-    return entries
+    entries
       .filter((entry) => entry.isDirectory() && COMPANY_ID_RE.test(entry.name))
-      .map((entry) => entry.name)
-      .sort();
+      .forEach((entry) => found.add(entry.name));
   } catch {
-    return [];
+    // Ignore missing local glctl storage; pushed snapshots may still exist.
   }
+  try {
+    const pushedRoot = path.join(glhubDataDir, "pushes");
+    const entries = await readdir(pushedRoot, { withFileTypes: true });
+    entries
+      .filter((entry) => entry.isDirectory() && COMPANY_ID_RE.test(entry.name))
+      .forEach((entry) => found.add(entry.name));
+  } catch {
+    // R2-only deployments can still open a company id manually.
+  }
+  return [...found].sort();
 }
 
 async function seedDemo(companyId: string): Promise<{ ids: string[] }> {
@@ -361,6 +410,122 @@ async function evolutionDocument(companyId: string, id: string): Promise<JsonVal
   };
 }
 
+function generationsFromPush(payload: PushPayload): GenerationRecord[] {
+  return Array.isArray(payload.generations)
+    ? payload.generations.filter((item): item is GenerationRecord => {
+        return Boolean(item && typeof item === "object" && !Array.isArray(item) && typeof item.id === "string");
+      })
+    : [];
+}
+
+function lineageFromPush(payload: PushPayload): LineageResult {
+  const generations = generationsFromPush(payload);
+  return {
+    nodes: generations.map((generation) => ({
+      id: generation.id,
+      parent_id: generation.parent_id ?? null,
+      soul: generation.soul || "",
+      score: typeof generation.metrics?.score === "number" ? generation.metrics.score : 0,
+      success: typeof generation.metrics?.success === "boolean" ? generation.metrics.success : false,
+      created_at: generation.created_at || "",
+      tags: generation.tags || [],
+    })),
+    edges: Array.isArray(payload.relations)
+      ? payload.relations.filter((item): item is LineageResult["edges"][number] => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+          const rec = item as Record<string, unknown>;
+          return (
+            typeof rec.from === "string" &&
+            typeof rec.to === "string" &&
+            typeof rec.relation_type === "string" &&
+            typeof rec.created_at === "string"
+          );
+        })
+      : [],
+  };
+}
+
+function showFromPush(payload: PushPayload, id: string): GenerationRecord | null {
+  return generationsFromPush(payload).find((generation) => generation.id === id) || null;
+}
+
+function evolutionDocumentFromPush(payload: PushPayload, id: string): JsonValue | null {
+  const lineage = lineageFromPush(payload);
+  const generations = generationsFromPush(payload);
+  const current = generations.find((generation) => generation.id === id);
+  if (!current) return null;
+  const parentId = typeof current.parent_id === "string" ? current.parent_id : null;
+  const parent = parentId ? generations.find((generation) => generation.id === parentId) || null : null;
+  const children = lineage.nodes.filter((node) => node.parent_id === id);
+  const currentScore =
+    typeof current.metrics?.score === "number" && Number.isFinite(current.metrics.score)
+      ? current.metrics.score
+      : null;
+  const parentScore =
+    parent && typeof parent.metrics?.score === "number" && Number.isFinite(parent.metrics.score)
+      ? parent.metrics.score
+      : null;
+  const scoreDelta =
+    currentScore !== null && parentScore !== null ? Number((currentScore - parentScore).toFixed(6)) : null;
+
+  return {
+    id: current.id,
+    title: current.soul || current.id,
+    before: parent
+      ? {
+          id: parent.id,
+          soul: parent.soul || "",
+          score: parentScore,
+          success: parent.metrics?.success ?? null,
+          tags: parent.tags || [],
+        }
+      : null,
+    transition: {
+      relation: parent ? "evolved_from" : "seed",
+      score_delta: scoreDelta,
+      gains: current.gains || [],
+      losses: current.losses || [],
+      note: current.philosophical_note || "",
+      retrospective: {
+        do_not: current.retrospective?.do_not || [],
+        do: current.retrospective?.do || [],
+        skills: current.retrospective?.skills || [],
+        bugs_fixed: current.retrospective?.bugs_fixed || [],
+        cases: (current.retrospective?.cases || []).map((item) => ({
+          name: item.name || "",
+          impact: item.impact || "",
+        })),
+      },
+      config_patches:
+        Array.isArray(current.config_patches) && current.config_patches.length > 0
+          ? current.config_patches
+          : current.config_patch
+            ? [current.config_patch]
+            : [],
+    },
+    after: {
+      id: current.id,
+      soul: current.soul || "",
+      score: currentScore,
+      success: current.metrics?.success ?? null,
+      tags: current.tags || [],
+      created_at: current.created_at || null,
+    },
+    next: children.map((child) => ({
+      id: child.id,
+      soul: child.soul || "",
+      score: child.score ?? null,
+      success: child.success ?? null,
+    })),
+  };
+}
+
+async function pushedFallback(companyId: string): Promise<PushPayload> {
+  const latest = await readLatestPush(companyId);
+  if (!latest) throw Object.assign(new Error("no pushed snapshot found"), { statusCode: 404 });
+  return latest;
+}
+
 function runGlctlString(companyId: string, args: string[]): Promise<string> {
   if (!COMPANY_ID_RE.test(companyId)) {
     return Promise.reject(Object.assign(new Error("Invalid company id"), { statusCode: 400 }));
@@ -440,6 +605,18 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     return;
   }
 
+  const pushMatch = /^\/api\/pushes\/([^/]+)\/latest$/.exec(url.pathname);
+  if (req.method === "GET" && pushMatch) {
+    const companyId = decodeURIComponent(pushMatch[1] || "");
+    const latest = await readLatestPush(companyId);
+    if (!latest) {
+      json(res, { error: "no pushed snapshot found", company_id: companyId }, 404);
+      return;
+    }
+    json(res, latest as JsonValue);
+    return;
+  }
+
   const match = /^\/api\/repos\/([^/]+)(?:\/([^/]+))?(?:\/([^/]+))?$/.exec(url.pathname);
   if (match) {
     const companyId = decodeURIComponent(match[1] || "");
@@ -502,15 +679,28 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       return;
     }
     if (action === "status") {
-      json(res, await runGlctl(companyId, ["status", "--json"]));
+      try {
+        json(res, await runGlctl(companyId, ["status", "--json"]));
+      } catch {
+        const snapshot = await pushedFallback(companyId);
+        json(res, (snapshot.status || { company_id: companyId }) as JsonValue);
+      }
       return;
     }
     if (action === "list") {
-      json(res, await runGlctl(companyId, ["list", "--json"]));
+      try {
+        json(res, await runGlctl(companyId, ["list", "--json"]));
+      } catch {
+        json(res, lineageFromPush(await pushedFallback(companyId)).nodes as JsonValue);
+      }
       return;
     }
     if (action === "lineage") {
-      json(res, await runGlctl(companyId, ["lineage", "--json"]));
+      try {
+        json(res, await runGlctl(companyId, ["lineage", "--json"]));
+      } catch {
+        json(res, lineageFromPush(await pushedFallback(companyId)) as unknown as JsonValue);
+      }
       return;
     }
     if (action === "fsck") {
@@ -518,11 +708,29 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       return;
     }
     if (action === "show" && id && GENERATION_ID_RE.test(id)) {
-      json(res, await runGlctl(companyId, ["show", id, "--json"]));
+      try {
+        json(res, await runGlctl(companyId, ["show", id, "--json"]));
+      } catch {
+        const generation = showFromPush(await pushedFallback(companyId), id);
+        if (!generation) {
+          json(res, { error: "generation not found" }, 404);
+          return;
+        }
+        json(res, generation as unknown as JsonValue);
+      }
       return;
     }
     if (action === "evolution" && id && GENERATION_ID_RE.test(id)) {
-      json(res, await evolutionDocument(companyId, id));
+      try {
+        json(res, await evolutionDocument(companyId, id));
+      } catch {
+        const document = evolutionDocumentFromPush(await pushedFallback(companyId), id);
+        if (!document) {
+          json(res, { error: "generation not found" }, 404);
+          return;
+        }
+        json(res, document);
+      }
       return;
     }
   }
