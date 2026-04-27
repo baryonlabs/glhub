@@ -1,0 +1,14 @@
+{
+  "name": "@paperclipai/glhub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../cli/node_modules/tsx/dist/cli.mjs src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.888.0"
+  }
+}
