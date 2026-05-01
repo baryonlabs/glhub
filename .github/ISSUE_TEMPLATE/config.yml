@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/baryonlabs/glhub/security/advisories/new
+    about: Please report security issues privately, not as public issues. See SECURITY.md.
+  - name: Companion CLI (glctl)
+    url: https://github.com/baryonlabs/glctl/issues
+    about: Issues with the local CLI belong on the glctl repo, not glhub.
