@@ -6,6 +6,12 @@
   <img src="assets/glhub-logo.png" alt="glhub logo" width="640">
 </p>
 
+<p align="center">
+  <a href="https://glhub.baryon.ai/hongsw/demo">
+    <img src="assets/screenshots/viewer-demo.png" alt="glhub project viewer — lineage graph and side-by-side evolution documents at glhub.baryon.ai/hongsw/demo" width="900">
+  </a>
+</p>
+
 `glctl` is the local control tool for generation lineage. It exists because AI
 agent work needs more than a final patch, score, or chat transcript. Each run
 needs a durable record of where it came from, what changed, what improved, what
@@ -204,6 +210,14 @@ A live, hosted glhub instance runs at:
 https://glhub.baryon.ai
 ```
 
+<p align="center">
+  <a href="https://glhub.baryon.ai/hongsw">
+    <img src="assets/screenshots/profile.png" alt="Owner profile at glhub.baryon.ai/hongsw — projects with forge backlink badges" width="800">
+  </a>
+  <br>
+  <em>Owner profile at <code>/{owner}</code> — projects with forge backlink badges.</em>
+</p>
+
 This deployment is a Cloudflare Worker that serves only the *push receive +
 viewer* surface. It accepts push snapshots through `POST /api/push` (Bearer
 token required) and serves the same evolution viewer for any project that has
@@ -234,6 +248,14 @@ Auth model:
   are rejected with `403`.
 - **Forge link** (`POST /api/repos/:c/forge-link`) — owner only.
 - **Webhook** — HMAC-SHA256 signature required (`X-Hub-Signature-256`).
+
+<p align="center">
+  <a href="https://glhub.baryon.ai/settings">
+    <img src="assets/screenshots/settings-signin.png" alt="glhub settings page asking the visitor to sign in with GitHub before issuing a Personal Access Token" width="800">
+  </a>
+  <br>
+  <em><code>/settings</code> — sign in with GitHub to issue and manage Personal Access Tokens.</em>
+</p>
 
 Self-host follows a different model: full feature, no auth boundary, and
 `glctl` is invoked directly as a subprocess.

@@ -6,6 +6,12 @@
   <img src="assets/glhub-logo.png" alt="glhub 로고" width="640">
 </p>
 
+<p align="center">
+  <a href="https://glhub.baryon.ai/hongsw/demo">
+    <img src="assets/screenshots/viewer-demo.png" alt="glhub.baryon.ai/hongsw/demo의 프로젝트 viewer — 계보 그래프와 양면 진화 문서" width="900">
+  </a>
+</p>
+
 `glctl`은 generation lineage를 다루는 로컬 제어 도구입니다. AI 에이전트
 작업에는 최종 patch, score, chat transcript만으로는 부족하기 때문에
 필요합니다. 각 run은 어디에서 왔는지, 무엇이 바뀌었는지, 무엇이
@@ -143,6 +149,14 @@ Comment와 edit proposal은 child generation으로 저장됩니다. glhub는 원
 https://glhub.baryon.ai
 ```
 
+<p align="center">
+  <a href="https://glhub.baryon.ai/hongsw">
+    <img src="assets/screenshots/profile.png" alt="glhub.baryon.ai/hongsw 오너 프로필 — 프로젝트와 forge 배지" width="800">
+  </a>
+  <br>
+  <em><code>/{owner}</code> 오너 프로필 — 프로젝트 목록 + forge backlink 배지.</em>
+</p>
+
 이 배포는 *push 수신 + viewer* 면적만 노출하는 Cloudflare Worker입니다. 모든 push snapshot은 `POST /api/push`로 받고(Bearer 토큰 필수), 같은 viewer가 push된 모든 프로젝트를 보여줍니다. mutation 엔드포인트(`seed-demo`, `generations`, `comment`)는 hosted에서 `501`을 반환하며 self-host 환경에서만 동작합니다.
 
 URL 구조:
@@ -167,6 +181,14 @@ URL 구조:
 - **푸시** (`POST /api/push`) — `Authorization: Bearer glhub_pat_…` 필수. 어떤 `company_id`에 처음 push한 사용자가 owner로 등록되며, 다른 사용자의 토큰으로는 같은 `company_id`에 push할 수 없습니다 (`403`).
 - **Forge 링크** (`POST /api/repos/:c/forge-link`) — owner 전용.
 - **웹훅** — `X-Hub-Signature-256` HMAC-SHA256 서명 검증 필수.
+
+<p align="center">
+  <a href="https://glhub.baryon.ai/settings">
+    <img src="assets/screenshots/settings-signin.png" alt="glhub settings 페이지 — Personal Access Token 발급 전 GitHub 로그인 안내" width="800">
+  </a>
+  <br>
+  <em><code>/settings</code> — GitHub로 로그인하여 Personal Access Token을 발급·관리.</em>
+</p>
 
 self-host는 다른 모델을 따릅니다. 모든 기능 활성화, 인증 경계 없음, `glctl`을 직접 subprocess로 실행.
 
