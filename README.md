@@ -75,6 +75,43 @@ GeekNews and by Ghostty's move away from GitHub: mirroring code is the small
 part; the hard part is preserving the project memory and workflow state around
 the code.
 
+## What's OSS, What's Enterprise
+
+glhub follows an open-core model. The lineage primitives — record, push, view,
+forge connectors — are fully open-source under Apache-2.0. Multi-user operation,
+identity, audit-grade compliance, and on-prem ops live in a separate commercial
+tier (Sentry-style: separate private repo plugged in via extension points, not
+GitLab-style `ee/` source-available subdirectory).
+
+| Capability | OSS (this repo) | Cloud (paid hosted) | Enterprise (paid + on-prem) |
+|---|---|---|---|
+| Generation lineage record + `glctl push` | ✅ | ✅ | ✅ |
+| Local single-dev viewer (this server) | ✅ | ✅ | ✅ |
+| Forge connectors (GitLab / Codeberg-Forgejo / GitHub) | ✅ basic | ✅ extended | ✅ extended + custom |
+| Multi-user RBAC | — | ✅ | ✅ |
+| SSO (SAML / SCIM / OIDC) | — | ✅ | ✅ |
+| Hosted ops (backup, scaling, SLA) | self-host yourself | ✅ | — |
+| Immutable audit log (1y+ retention) | — | partial | ✅ full |
+| Signed audit pack (cryptographic provenance) | — | — | ✅ |
+| Policy DSL + enforcement gate | — | — | ✅ |
+| Compliance evidence packs (SOC2 / EU AI Act / NIST AI RMF / HIPAA / ISO 42001) | — | — | ✅ |
+| Multi-tenancy + geo-replication | — | ✅ | ✅ |
+| Air-gapped / on-prem package | self-build | — | ✅ supported |
+| Org-level dashboards (cost / decisions / drift) | — | basic | ✅ full |
+| Tamper-evident hash chain (Merkle per company) | — | — | ✅ |
+| HSM-backed signing keys | — | — | ✅ |
+| White-label (custom domain / branding) | — | — | ✅ |
+
+OSS users do not need anything from the commercial tiers to ship a working
+deployment — single-team, self-hosted, full lineage and viewer is the OSS
+path. Cloud and Enterprise add the things multi-team regulated buyers
+typically check before signing: identity, audit at compliance grade, policy
+enforcement, on-prem support.
+
+If you're a regulated buyer and one of the Enterprise rows is the wall you're
+hitting, please open an issue tagged `enterprise-inquiry` or reach out through
+the contact path in this repo's profile.
+
 ## What glhub Shows
 
 The web view is intentionally centered on comparison:
