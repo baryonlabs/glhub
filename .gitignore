@@ -26,3 +26,7 @@ _workspace/
 *.pem
 .ralph/
 .ralphrc
+
+# Stray AI assets (don't auto-commit large generated images)
+Gemini_Generated_Image_*.png
+Gemini_*.png
