@@ -34,14 +34,11 @@ import {
 } from "./core/token.js";
 import { authorizeUrl, exchangeCode, fetchUser } from "./core/github-oauth.js";
 import { settingsHtml } from "./core/settings-html.js";
-import {
-  extractMetadata,
-  safeKeySegment,
-  verifyGithubSignature,
-} from "./core/github-webhook.js";
+import { safeKeySegment } from "./core/github-webhook.js";
 import { profileHtml, type OwnerProjectEntry } from "./core/profile-html.js";
 import { inferProvider, type ForgeLink } from "./core/forge-link.js";
 import { detectLang, landingHtml } from "./core/landing-html.js";
+import { GitHubAdapter, GitLabAdapter, ForgejoAdapter, type ForgeAdapter } from "./connectors/index.js";
 
 export interface Env {
   GLHUB_R2: R2Bucket;
@@ -52,6 +49,8 @@ export interface Env {
   GITHUB_CLIENT_SECRET?: string;
   SESSION_SECRET?: string;
   GITHUB_WEBHOOK_SECRET?: string;
+  GITLAB_WEBHOOK_SECRET?: string;
+  FORGEJO_WEBHOOK_SECRET?: string;
 }
 
 class HttpError extends Error {
@@ -418,45 +417,64 @@ async function route(request: Request, env: Env): Promise<Response> {
       push_storage: "r2-binding",
       push_prefix: prefixOf(env),
       auth: env.GITHUB_CLIENT_ID ? "github-oauth" : "disabled",
-      webhook: env.GITHUB_WEBHOOK_SECRET ? "github" : "disabled",
+      webhooks: {
+        github: env.GITHUB_WEBHOOK_SECRET ? "active" : "disabled",
+        gitlab: env.GITLAB_WEBHOOK_SECRET ? "active" : "disabled",
+        forgejo: env.FORGEJO_WEBHOOK_SECRET ? "active" : "disabled",
+      },
       glctl_path: null,
       data_dir: null,
     });
   }
 
-  // ---- GitHub webhook receiver ----
-  if (method === "POST" && pathname === "/webhooks/github") {
-    if (!env.GITHUB_WEBHOOK_SECRET) {
-      return jsonResponse({ error: "webhook secret not configured" }, 503);
+  // ---- Forge webhook receivers (adapter-based) ----
+  const webhookRoute = /^\/webhooks\/(github|gitlab|forgejo|codeberg)$/.exec(pathname);
+  if (method === "POST" && webhookRoute) {
+    const forgeName = webhookRoute[1] as "github" | "gitlab" | "forgejo" | "codeberg";
+    const secretKey = (
+      forgeName === "github" ? env.GITHUB_WEBHOOK_SECRET :
+      forgeName === "gitlab" ? env.GITLAB_WEBHOOK_SECRET :
+      env.FORGEJO_WEBHOOK_SECRET
+    );
+    const adapter: ForgeAdapter = (
+      forgeName === "github" ? GitHubAdapter :
+      forgeName === "gitlab" ? GitLabAdapter :
+      ForgejoAdapter
+    );
+    if (!secretKey) {
+      return jsonResponse({ error: `${forgeName} webhook secret not configured` }, 503);
     }
     const rawBody = await request.text();
-    const sig = request.headers.get("x-hub-signature-256");
-    const ok = await verifyGithubSignature(env.GITHUB_WEBHOOK_SECRET, sig, rawBody);
+    const ok = await adapter.verifyWebhookSignature(secretKey, request.headers, rawBody);
     if (!ok) {
       return jsonResponse({ error: "signature verification failed" }, 401);
     }
-    const event = request.headers.get("x-github-event") || "unknown";
-    const deliveryId = request.headers.get("x-github-delivery") || crypto.randomUUID();
-    const hookId = request.headers.get("x-github-hook-id");
     let payload: unknown = null;
     try {
       payload = JSON.parse(rawBody);
     } catch {
       payload = { _parse_error: "non-json body" };
     }
-    const metadata = extractMetadata(event, deliveryId, hookId, payload);
-    const eventSegment = safeKeySegment(event, "unknown");
-    const deliverySegment = safeKeySegment(deliveryId, "no-delivery");
-    const key = `${prefixOf(env)}/webhooks/${eventSegment}/${deliverySegment}.json`;
-    const record = { ...metadata, payload };
+    const normalized = adapter.parseEvent(request.headers, payload);
+    const eventSegment = safeKeySegment(normalized.event, "unknown");
+    const deliverySegment = safeKeySegment(normalized.delivery_id, "no-delivery");
+    const key = `${prefixOf(env)}/webhooks/${forgeName}/${eventSegment}/${deliverySegment}.json`;
+    const record = {
+      schema_version: "glhub-webhook/v1",
+      provider: forgeName,
+      ...normalized,
+      received_at: new Date().toISOString(),
+      payload,
+    };
     await r2PutJson(env, key, JSON.stringify(record, null, 2));
     return jsonResponse(
       {
         ok: true,
-        event,
-        delivery_id: deliveryId,
-        repository: metadata.repository_full_name,
-        sender: metadata.sender_login,
+        provider: forgeName,
+        event: normalized.event,
+        delivery_id: normalized.delivery_id,
+        repository: normalized.repository_full_name,
+        sender: normalized.sender_login,
         stored_key: key,
       },
       202,

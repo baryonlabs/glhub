@@ -22,9 +22,11 @@ GLHUB_INSTANCE_ID = "glhub.baryon.ai"
 GITHUB_CLIENT_ID = "Iv23li2Lz1SjxVk1WZI3"
 #
 # Secrets (set via `wrangler secret put NAME`):
-#   GITHUB_CLIENT_SECRET — from GitHub OAuth App / GitHub App
-#   SESSION_SECRET — random 32+ byte hex (e.g. `openssl rand -hex 32`)
-#   GITHUB_WEBHOOK_SECRET — webhook secret from GitHub App settings
+#   GITHUB_CLIENT_SECRET    — from GitHub OAuth App / GitHub App
+#   SESSION_SECRET          — random 32+ byte hex (e.g. `openssl rand -hex 32`)
+#   GITHUB_WEBHOOK_SECRET   — webhook secret from GitHub App settings → /webhooks/github
+#   GITLAB_WEBHOOK_SECRET   — webhook token from GitLab project hooks → /webhooks/gitlab
+#   FORGEJO_WEBHOOK_SECRET  — webhook secret from Forgejo/Codeberg → /webhooks/forgejo
 
 # Custom domain — `baryon.ai` zone must be on this Cloudflare account
 [[routes]]

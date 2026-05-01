@@ -250,7 +250,9 @@ TTL: session 7 days, OAuth state 10 min.
 | `/api/repos/:company_id/comment/:gen` | POST | — | self-host: glctl new --parent. **hosted: 501** |
 | `/api/repos/:company_id/fsck` | GET | — | self-host: glctl fsck. **hosted: 501** |
 | `/api/push` | POST | self-host: none / hosted: Bearer + ownership | persist push snapshot |
-| `/webhooks/github` | POST | HMAC-SHA256 (`X-Hub-Signature-256`) | persist webhook event |
+| `/webhooks/github` | POST | HMAC-SHA256 (`X-Hub-Signature-256`) | persist webhook event (GitHub) |
+| `/webhooks/gitlab` | POST | `X-Gitlab-Token` comparison | persist webhook event (GitLab) |
+| `/webhooks/forgejo` | POST | HMAC-SHA256 (`X-Forgejo-Signature` / `X-Hub-Signature-256`) | persist webhook event (Forgejo/Codeberg) |
 
 Reserved first segments (cannot be `/{owner}`): `api`, `auth`, `webhooks`,
 `settings`, `favicon.ico`, `robots.txt`.
@@ -318,17 +320,21 @@ Forge event → glhub generation context → agent run/evaluation → glhub
 evolution document → forge backlink
 ```
 
-Connectors live behind a single `Adapter` abstraction (planned, Wave 2):
+Connectors live behind a single `ForgeAdapter` abstraction (`src/connectors/`) landed in Wave 2:
 
 ```ts
-interface Adapter {
+// src/connectors/types.ts
+interface ForgeAdapter {
   readonly provider: ForgeProvider;
-  verifyWebhookSignature(secret: string, signature: string | null, body: string): Promise<boolean>;
+  verifyWebhookSignature(secret: string, headers: Headers, rawBody: string): Promise<boolean>;
   parseEvent(headers: Headers, payload: unknown): NormalizedForgeEvent;
   buildBacklinkUrl(repo: string, generationId: string): string;
   // optional: read PR / issue, post comment, etc. (Cloud / Enterprise only)
 }
 ```
+
+Implementations: `src/connectors/github.ts`, `src/connectors/gitlab.ts`, `src/connectors/forgejo.ts`.
+Registry: `src/connectors/index.ts` — `getAdapter(provider: ForgeProvider): ForgeAdapter | null`.
 
 Provider is auto-inferred from URL host (see `core/forge-link.ts`):
 
@@ -419,12 +425,11 @@ Adding a new hosted-only endpoint (e.g. dashboard counters) requires either:
 
 ## 10. Out-of-spec / TODO
 
-- ~~`branch?: string` first-class field on `GenerationRecord`~~ ✅ landed
-  2026-05-02. `branch?: string | null` is now part of `GenerationRecord` and
-  flows through `LineageNode`, `lineageFromPush`, `evolutionDocumentFromPush`,
-  the embedded viewer (Branch / 브랜치 label under before/after cards), and
-  the side-by-side compare documents. `glctl --branch <name>` flag for
-  setting it on `glctl new` is the next step.
+- ~~`branch?: string` first-class field on `GenerationRecord`~~ ✅ landed 2026-05-02.
+- ~~Forge connector adapter abstraction (`src/connectors/`)~~ ✅ landed 2026-05-02.
+  GitHub / GitLab / Forgejo adapters live behind `ForgeAdapter` interface.
+  `/webhooks/github`, `/webhooks/gitlab`, `/webhooks/forgejo` routes active.
+  GITLAB_WEBHOOK_SECRET / FORGEJO_WEBHOOK_SECRET secrets added to Env + wrangler docs.
 - `glctl --token` flag (currently relies on env / config). Likely small.
 - Worker bundle size monitoring CI step.
 - Self-host migration tool when `schema_version` v2 lands.

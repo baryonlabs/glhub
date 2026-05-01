@@ -171,7 +171,7 @@ session.
 - Issue templates (`good-first-issue` ready)
 
 ### Wave 2 — Forge neutrality, day-1 (in progress)
-- `src/connectors/{github,gitlab,forgejo}/` adapter abstraction
+- ~~`src/connectors/{github,gitlab,forgejo}/` adapter abstraction~~ ✅ 2026-05-02
 - `schema_version` v2 migration policy
 - `push_id` idempotency key
 - Viewer static asset extraction (zero-build retained)
