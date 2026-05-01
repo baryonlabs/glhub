@@ -9,6 +9,72 @@ documents.
 `glctl` records local generation history. `glhub` receives, stores, and presents
 that history as a browsable evolution workspace.
 
+## Why glhub Exists
+
+Code is easy to mirror. The work around the code is not.
+
+### Background: Ghostty leaving GitHub
+
+Ghostty's decision to reduce its GitHub dependency is a direct background case
+for glhub. The important lesson is not "GitHub bad" or "everyone should migrate
+today." The lesson is that even when Git itself is distributed, real software
+delivery depends on centralized layers above Git: issues, pull requests, review
+queues, Actions, status pages, account policy, and project-specific workflow
+state.
+
+When those layers degrade, the team may still have the repository, but the work
+cannot move normally. A project can keep a read-only mirror, migrate code, or add
+another remote, but the surrounding memory of the project is much harder to move
+cleanly.
+
+See: [Ghostty is leaving GitHub](https://news.hada.io/topic?id=28993).
+
+### The project memory problem
+
+That distinction shows up every time teams try to leave a central forge or
+survive an outage. A repository clone can preserve commits, but it does not
+automatically preserve the operating memory around the project: tickets, pull
+requests, closed decisions, links that point into the old platform, CI behavior,
+maintainer permissions, branch rules, and the history of why a change happened.
+Those records are the difference between having the files and understanding the
+work.
+
+The emotional weight of that move matters too. Long-lived developer tools become
+places where maintainers learn, collaborate, build habits, and accumulate trust.
+When a critical work platform starts blocking review and release work often
+enough, teams do not just lose uptime; they lose confidence that their project
+memory and delivery process are under their control.
+
+Agent-generated work has the same problem, only faster. An AI run may leave a
+patch, a report, or a score, but the durable asset is the lineage around it:
+which generation it came from, what changed, what improved, what regressed,
+which rules were learned, which cases changed the decision, and what should be
+tried next.
+
+glhub exists so that agent work is not trapped inside one chat session, one
+vendor UI, one CI log, or one orchestrator database. It gives AI-native teams a
+portable repository for the reasoning trail around generated work.
+
+The default deployment model should therefore connect glhub to the forge a team
+already trusts:
+
+- **GitLab OSS + glhub** for teams that want self-hosted source control,
+  issues, merge requests, CI, and agent lineage under their own control.
+- **Codeberg / Forgejo + glhub** for teams that want a FOSS forge, or a hosted
+  Forgejo instance, while keeping AI lineage portable across forge providers.
+- **GitHub + glhub** for teams that want to keep GitHub as the collaboration
+  surface while storing AI-generated lineage, evaluations, and evolution memory
+  in a separate portable system.
+
+glhub should not require teams to abandon their forge on day one. It should make
+the AI work around that forge portable first, then let teams decide whether to
+stay on GitHub, run GitLab, use Codeberg, self-host Forgejo, or move elsewhere.
+
+This need is well summarized by the discussion around a GitHub outage on
+GeekNews and by Ghostty's move away from GitHub: mirroring code is the small
+part; the hard part is preserving the project memory and workflow state around
+the code.
+
 ## What glhub Shows
 
 The web view is intentionally centered on comparison:
@@ -421,3 +487,51 @@ The core rule:
 Do not overwrite evolution memory. Add a new generation.
 ```
 
+## Forge Integration Direction
+
+glhub should integrate with existing forges instead of replacing them.
+
+The first-class targets are:
+
+1. **GitLab OSS + glhub**
+   - self-hosted default path
+   - read projects, issues, merge requests, pipelines, commit refs, and users
+   - attach generation ids and evolution documents to merge requests or issues
+   - keep lineage snapshots outside GitLab so the project memory can be moved or
+     restored independently
+
+2. **Codeberg / Forgejo + glhub**
+   - FOSS forge path, with Codeberg as the hosted profile and Forgejo as the
+     self-hosted profile
+   - read repositories, issues, pull requests, comments, commits, releases, and
+     users through the Forgejo/Gitea-compatible API
+   - receive push, issue, pull request, and comment events through Forgejo
+     webhooks
+   - write back links to glhub evolution documents as issue or pull request
+     comments
+   - keep lineage independent from the Codeberg instance so projects can move
+     between hosted Codeberg, self-hosted Forgejo, GitLab, or GitHub
+
+3. **GitHub + glhub**
+   - pragmatic adoption path for existing open source projects
+   - read repositories, issues, pull requests, checks, Actions runs, comments,
+     and commit refs
+   - write back links to glhub evolution documents as PR comments, issue
+     comments, or status/check annotations
+   - preserve AI lineage even when GitHub search, Actions, PR indexing, or UI
+     state is degraded
+
+The integration contract should be forge-neutral:
+
+```text
+Forge event -> glhub generation context -> agent run/evaluation -> glhub
+evolution document -> forge backlink
+```
+
+For Codeberg, this should be implemented as a `forgejo` connector with
+configurable `base_url` and `api_root` values, not as a Codeberg-only adapter.
+That keeps the same integration usable for Codeberg, self-hosted Forgejo, and
+compatible Gitea instances.
+
+The forge remains the place where humans already collaborate. glhub becomes the
+portable memory layer for agent-generated work around that collaboration.
