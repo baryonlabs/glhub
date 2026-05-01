@@ -6,18 +6,30 @@
   <img src="assets/glhub-logo.png" alt="glhub logo" width="640">
 </p>
 
-`glhub` is the Generation Lineage Hub for Nautilus.
+`glctl` is the local control tool for generation lineage. It exists because AI
+agent work needs more than a final patch, score, or chat transcript. Each run
+needs a durable record of where it came from, what changed, what improved, what
+regressed, which lessons were learned, and which next generation should inherit
+that memory. Without that lineage, agent work becomes a pile of disconnected
+outputs instead of an auditable evolution process.
 
-Nautilus is the meta-loop and system-of-record for AI agent work. Paperclip is one frontend (control plane / board UI); other frontends are possible. `glhub` and `glctl` serve Nautilus directly — they do not depend on any single frontend.
+`glctl` records that process locally as generation history. It gives teams a
+Git-like way to initialize a lineage store, create new generations, inspect
+parents and children, validate repository health, render a graph, and push a
+snapshot when the work is ready to be shared.
 
-If GitHub is a thinking space for code review through commits and pull requests,
-glhub is a thinking space for evolution review through generations and evolution
-documents.
+Nautilus is the meta-loop and system-of-record for AI agent work. Paperclip is
+one frontend, a control plane / board UI; other frontends are possible. `glctl`
+and `glhub` serve Nautilus directly, so they do not depend on any single
+frontend.
 
-`glctl` records local generation history. `glhub` receives, stores, and presents
-that history as a browsable evolution workspace.
+`glhub` is what comes after local lineage becomes shared memory. If GitHub is a
+thinking space for code review through commits and pull requests, glhub is a
+thinking space for evolution review through generations and evolution
+documents. It receives the history recorded by `glctl`, stores it, and presents
+it as a browsable evolution workspace.
 
-## Why glhub Exists
+## Why glctl and glhub Exist
 
 Code is easy to mirror. The work around the code is not.
 

@@ -6,15 +6,31 @@
   <img src="assets/glhub-logo.png" alt="glhub ロゴ" width="640">
 </p>
 
-`glhub` は Nautilus のための Generation Lineage Hub です。
+`glctl` は generation lineage を扱う local control tool です。AI agent
+work には final patch、score、chat transcript だけでは足りないため、
+これが必要になります。各 run は、どこから来たのか、何が変わったのか、
+何が改善し何が後退したのか、どの lesson を学んだのか、次の generation
+がどの memory を継承すべきかを durable に記録する必要があります。その
+lineage がなければ、agent work は auditable な evolution process では
+なく、互いに切り離された output の集まりになります。
 
-Nautilus は AI agent work の meta-loop であり system of record です。Paperclip は frontend の一つ、つまり control plane / board UI であり、他の frontend も接続できます。`glhub` と `glctl` は Nautilus を直接支えるもので、特定の frontend には依存しません。
+`glctl` はその process を local generation history として記録します。
+team は `glctl` を使って lineage store を初期化し、新しい generation を
+作成し、parent/child を確認し、repository health を検証し、graph を
+render し、共有できる状態になった snapshot を push できます。
 
-GitHub が commit と pull request を通じて code review を行うための思考空間だとすれば、glhub は generation と evolution document を通じて evolution review を行うための思考空間です。
+Nautilus は AI agent work の meta-loop であり system of record です。
+Paperclip は frontend の一つ、つまり control plane / board UI であり、
+他の frontend も接続できます。`glctl` と `glhub` は Nautilus を直接支える
+ため、特定の frontend には依存しません。
 
-`glctl` は local generation history を記録します。`glhub` はその history を受け取り、保存し、閲覧可能な evolution workspace として提示します。
+`glhub` は local lineage が shared memory になった後の段階です。GitHub
+が commit と pull request を通じて code review を行うための思考空間だと
+すれば、glhub は generation と evolution document を通じて evolution
+review を行うための思考空間です。`glctl` が記録した history を受け取り、
+保存し、閲覧可能な evolution workspace として提示します。
 
-## glhub が存在する理由
+## glctl と glhub が存在する理由
 
 コードは mirror しやすいものです。コードの周辺にある作業記憶はそうではありません。
 

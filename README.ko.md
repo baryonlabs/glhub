@@ -6,15 +6,31 @@
   <img src="assets/glhub-logo.png" alt="glhub 로고" width="640">
 </p>
 
-`glhub`는 Nautilus를 위한 Generation Lineage Hub입니다.
+`glctl`은 generation lineage를 다루는 로컬 제어 도구입니다. AI 에이전트
+작업에는 최종 patch, score, chat transcript만으로는 부족하기 때문에
+필요합니다. 각 run은 어디에서 왔는지, 무엇이 바뀌었는지, 무엇이
+개선되거나 퇴보했는지, 어떤 lesson을 배웠는지, 다음 generation이 어떤
+memory를 물려받아야 하는지 남겨야 합니다. 이 lineage가 없으면 agent
+work는 감사 가능한 evolution process가 아니라 서로 끊어진 output 더미가
+됩니다.
 
-Nautilus는 AI 에이전트 작업을 위한 메타 루프이자 시스템 오브 레코드입니다. Paperclip은 하나의 프론트엔드, 즉 컨트롤 플레인/보드 UI일 뿐이며 다른 프론트엔드도 가능합니다. `glhub`와 `glctl`은 Nautilus를 직접 지원하며 특정 프론트엔드에 의존하지 않습니다.
+`glctl`은 그 과정을 로컬 generation history로 기록합니다. 팀은 `glctl`로
+lineage store를 초기화하고, 새 generation을 만들고, parent/child를
+확인하고, repository health를 검증하고, graph를 렌더링하고, 공유할 준비가
+되면 snapshot을 push할 수 있습니다.
 
-GitHub가 커밋과 풀 리퀘스트를 통해 코드 리뷰를 위한 사고 공간이라면, glhub는 generation과 evolution document를 통해 진화 리뷰를 위한 사고 공간입니다.
+Nautilus는 AI 에이전트 작업을 위한 메타 루프이자 시스템 오브 레코드입니다.
+Paperclip은 하나의 프론트엔드, 즉 컨트롤 플레인/보드 UI일 뿐이며 다른
+프론트엔드도 가능합니다. `glctl`과 `glhub`는 Nautilus를 직접 지원하므로
+특정 프론트엔드에 의존하지 않습니다.
 
-`glctl`은 로컬 generation history를 기록합니다. `glhub`는 그 history를 받아 저장하고, 탐색 가능한 evolution workspace로 보여줍니다.
+`glhub`는 로컬 lineage가 shared memory가 된 다음 단계입니다. GitHub가
+커밋과 풀 리퀘스트를 통해 코드 리뷰를 위한 사고 공간이라면, glhub는
+generation과 evolution document를 통해 진화 리뷰를 위한 사고 공간입니다.
+`glhub`는 `glctl`이 기록한 history를 받아 저장하고, 탐색 가능한 evolution
+workspace로 보여줍니다.
 
-## glhub가 필요한 이유
+## glctl과 glhub가 필요한 이유
 
 코드는 미러링하기 쉽습니다. 코드 주변의 작업 기억은 그렇지 않습니다.
 

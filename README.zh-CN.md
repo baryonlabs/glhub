@@ -6,15 +6,28 @@
   <img src="assets/glhub-logo.png" alt="glhub 标志" width="640">
 </p>
 
-`glhub` 是 Nautilus 的 Generation Lineage Hub。
+`glctl` 是用于管理 generation lineage 的本地控制工具。它存在的原因是：
+AI agent 工作不能只留下最终 patch、score 或 chat transcript。每一次 run
+都需要持久记录它从哪里来、改变了什么、什么变好了、什么退化了、学到了
+哪些 lesson，以及下一代 generation 应该继承哪些 memory。没有这条
+lineage，agent work 就会变成一堆互相断开的 output，而不是可审计的
+evolution process。
 
-Nautilus 是 AI agent 工作的元循环和系统记录。Paperclip 只是一个前端，也就是 control plane / board UI；其他前端同样可以接入。`glhub` 和 `glctl` 直接服务 Nautilus，不依赖某一个特定前端。
+`glctl` 把这个过程记录为本地 generation history。团队可以用它初始化
+lineage store、创建新的 generation、检查 parent/child、验证 repository
+health、渲染 graph，并在准备共享时 push snapshot。
 
-如果说 GitHub 是通过 commit 和 pull request 进行代码审查的思考空间，那么 glhub 是通过 generation 和 evolution document 进行演化审查的思考空间。
+Nautilus 是 AI agent 工作的元循环和系统记录。Paperclip 只是一个前端，
+也就是 control plane / board UI；其他前端同样可以接入。`glctl` 和
+`glhub` 直接服务 Nautilus，因此不依赖某一个特定前端。
 
-`glctl` 记录本地 generation history。`glhub` 接收、存储并展示这些 history，让它们成为可以浏览的 evolution workspace。
+`glhub` 是本地 lineage 变成 shared memory 之后的下一步。如果说 GitHub
+是通过 commit 和 pull request 进行代码审查的思考空间，那么 glhub 是
+通过 generation 和 evolution document 进行演化审查的思考空间。它接收
+`glctl` 记录的 history，进行存储，并把它展示为可以浏览的 evolution
+workspace。
 
-## 为什么需要 glhub
+## 为什么需要 glctl 和 glhub
 
 代码容易镜像。代码周围的工作记忆并不容易。
 
