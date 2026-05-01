@@ -1,6 +1,7 @@
 # Build / runtime
 node_modules/
 dist/
+.wrangler/
 *.log
 
 # Local data
@@ -21,3 +22,5 @@ _workspace/
 .env
 .env.*
 !.env.example
+.KEY/
+*.pem

@@ -5,15 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "dev:worker": "wrangler dev",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "build": "tsc",
+    "deploy:worker": "wrangler deploy"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
     "@types/node": "^24.0.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wrangler": "^4.0.0"
   }
 }

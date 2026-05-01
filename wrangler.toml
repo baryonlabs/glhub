@@ -1,0 +1,32 @@
+name = "glhub"
+main = "src/worker.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# R2 binding — bucket created via `wrangler r2 bucket create glhub-pushes`
+[[r2_buckets]]
+binding = "GLHUB_R2"
+bucket_name = "glhub-pushes"
+
+# KV binding (auth tokens) — namespace created via `wrangler kv namespace create GLHUB_KV`
+# Replace `id` after running the create command (wrangler will print the id).
+[[kv_namespaces]]
+binding = "GLHUB_KV"
+id = "ab020d78573246f6aafbbdee5fac3f3e"
+
+# Vars exposed to Worker (non-secret config)
+[vars]
+GLHUB_R2_PREFIX = "glhub"
+GLHUB_INSTANCE_ID = "glhub.baryon.ai"
+# GITHUB_CLIENT_ID is a [vars] (public). Set via dashboard or wrangler.toml.
+GITHUB_CLIENT_ID = "Iv23li2Lz1SjxVk1WZI3"
+#
+# Secrets (set via `wrangler secret put NAME`):
+#   GITHUB_CLIENT_SECRET — from GitHub OAuth App / GitHub App
+#   SESSION_SECRET — random 32+ byte hex (e.g. `openssl rand -hex 32`)
+#   GITHUB_WEBHOOK_SECRET — webhook secret from GitHub App settings
+
+# Custom domain — `baryon.ai` zone must be on this Cloudflare account
+[[routes]]
+pattern = "glhub.baryon.ai"
+custom_domain = true

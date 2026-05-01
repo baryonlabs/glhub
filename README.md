@@ -196,7 +196,49 @@ The web view supports:
 Comments and edit proposals are saved as child generations. glhub does not
 overwrite the original generation document, so the lineage remains auditable.
 
-## Run
+## Hosted Endpoint
+
+A live, hosted glhub instance runs at:
+
+```text
+https://glhub.baryon.ai
+```
+
+This deployment is a Cloudflare Worker that serves only the *push receive +
+viewer* surface. It accepts push snapshots through `POST /api/push` (Bearer
+token required) and serves the same evolution viewer for any project that has
+been pushed. Mutating endpoints (`seed-demo`, `generations`, `comment`) return
+`501` on the hosted endpoint and require self-host.
+
+URL structure:
+
+```text
+/                                    # Sign-in gate (redirects to GitHub OAuth)
+/{owner}                             # Public profile page — projects + forge badges
+/{owner}/{project_id}                # Public viewer for a pushed project
+/settings                            # Personal Access Token management (login required)
+/login/cli                           # Loopback OAuth flow for `glctl login`
+/auth/github/{login,callback,logout}
+/webhooks/github                     # HMAC-verified webhook receiver
+/api/health                          # Reports auth + webhook status
+/api/me, /api/tokens
+/api/companies, /api/pushes/:c/latest
+/api/repos/:c/{status,list,lineage,show,evolution,forge-link}
+```
+
+Auth model:
+
+- **Read** (GET endpoints, viewer, profile) — public.
+- **Push** (`POST /api/push`) — requires `Authorization: Bearer glhub_pat_…`.
+  First push to a `company_id` claims ownership; later pushes from other users
+  are rejected with `403`.
+- **Forge link** (`POST /api/repos/:c/forge-link`) — owner only.
+- **Webhook** — HMAC-SHA256 signature required (`X-Hub-Signature-256`).
+
+Self-host follows a different model: full feature, no auth boundary, and
+`glctl` is invoked directly as a subprocess.
+
+## Run (self-host)
 
 From the repository root:
 
@@ -413,16 +455,71 @@ This creates a child generation:
 - `kind=comment` -> tags: `comment`, `glhub-note`
 - `kind=edit` -> tags: `edit`, `glhub-note`; the text is also recorded as a `do` retrospective item
 
+### Forge Link
+
+```http
+GET  /api/repos/:companyId/forge-link
+POST /api/repos/:companyId/forge-link
+```
+
+Public read. Owner-only write (Bearer token from the same user that owns the
+project, or active session). Body for write:
+
+```json
+{ "url": "https://github.com/owner/repo" }
+```
+
+Provider is auto-inferred from the URL host (`github`, `gitlab`, `codeberg`,
+`forgejo`, `bitbucket`, or `custom`). Stored response shape:
+
+```json
+{
+  "schema_version": "glhub-forge-link/v1",
+  "company_id": "demo",
+  "provider": "github",
+  "repo": "owner/repo",
+  "url": "https://github.com/owner/repo",
+  "set_by_user_id": "...",
+  "set_by_login": "...",
+  "set_at": "..."
+}
+```
+
+The viewer fetches this on load and renders a badge next to the brand. The
+profile page renders the same badge per project.
+
+### Webhook (hosted)
+
+```http
+POST /webhooks/github
+```
+
+Receives GitHub App webhook events. Verifies `X-Hub-Signature-256` HMAC-SHA256
+against the configured `GITHUB_WEBHOOK_SECRET`. Stores the event metadata and
+full payload to:
+
+```text
+glhub/webhooks/{event}/{delivery_id}.json
+```
+
+Returns `202` on success, `401` on signature mismatch, `503` if no webhook
+secret is configured.
+
 ### Push Snapshot
 
 ```http
 POST /api/push
 ```
 
+Hosted endpoint requires `Authorization: Bearer glhub_pat_…`. First push to a
+`company_id` claims ownership; subsequent pushes from other tokens get `403`.
+Self-host accepts unauthenticated push.
+
 Used by:
 
 ```sh
-glctl push --remote http://127.0.0.1:3201
+glctl push --remote https://glhub.baryon.ai     # hosted, needs `glctl login`
+glctl push --remote http://127.0.0.1:3201       # self-host, no auth
 ```
 
 Payload:
@@ -501,7 +598,7 @@ cd glctl
 cargo build --release
 ```
 
-Push:
+### Self-host push
 
 ```sh
 GLCTL_COMPANY_ID=demo_company \
@@ -509,16 +606,46 @@ GLCTL_DATA_DIR="$HOME/.glctl/data" \
 ./target/release/glctl push --remote http://127.0.0.1:3201
 ```
 
-For the temporary hosted endpoint:
+### Hosted push (requires login)
+
+Authenticate once via interactive browser flow:
+
+```sh
+glctl login
+# Opens browser → GitHub OAuth → token issued and saved to ~/.glctl/config
+```
+
+Headless / CI alternative: generate a token at
+`https://glhub.baryon.ai/settings` and save it directly:
+
+```sh
+glctl auth --token glhub_pat_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Then push:
 
 ```sh
 GLCTL_COMPANY_ID=demo_company \
 GLCTL_DATA_DIR="$HOME/.glctl/data" \
-./target/release/glctl push --remote https://glhub.baryon.ai
+glctl push --remote https://glhub.baryon.ai
 ```
 
 `glctl push` uses `https://glhub.baryon.ai` by default when neither `--remote`
-nor `GLHUB_URL` is set.
+nor `GLHUB_URL` is set. Token resolution: `--token` > `GLHUB_TOKEN` > `~/.glctl/config`.
+
+### Connecting a forge
+
+After your first push to a `company_id`, attach a forge URL so the viewer and
+profile page show a backlink badge. Provider (github / gitlab / codeberg /
+forgejo / bitbucket) is auto-inferred from the URL:
+
+```sh
+TOKEN=$(jq -r .token ~/.glctl/config)
+curl -X POST https://glhub.baryon.ai/api/repos/demo_company/forge-link \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://github.com/your/repo"}'
+```
 
 ## Verification
 

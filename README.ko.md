@@ -135,7 +135,42 @@ Web view는 다음을 지원합니다.
 
 Comment와 edit proposal은 child generation으로 저장됩니다. glhub는 원본 generation document를 덮어쓰지 않기 때문에 lineage는 auditable하게 유지됩니다.
 
-## 실행
+## Hosted Endpoint
+
+호스팅 중인 glhub 인스턴스가 다음 주소에서 운영되고 있어요.
+
+```text
+https://glhub.baryon.ai
+```
+
+이 배포는 *push 수신 + viewer* 면적만 노출하는 Cloudflare Worker입니다. 모든 push snapshot은 `POST /api/push`로 받고(Bearer 토큰 필수), 같은 viewer가 push된 모든 프로젝트를 보여줍니다. mutation 엔드포인트(`seed-demo`, `generations`, `comment`)는 hosted에서 `501`을 반환하며 self-host 환경에서만 동작합니다.
+
+URL 구조:
+
+```text
+/                                    # 로그인 게이트 (GitHub OAuth로 redirect)
+/{owner}                             # 공개 프로필 — 프로젝트 목록 + forge 배지
+/{owner}/{project_id}                # push된 프로젝트의 공개 viewer
+/settings                            # Personal Access Token 발급/관리 (로그인 필요)
+/login/cli                           # `glctl login`이 사용하는 loopback OAuth flow
+/auth/github/{login,callback,logout}
+/webhooks/github                     # HMAC 검증 후 R2에 기록
+/api/health                          # auth + webhook 상태 보고
+/api/me, /api/tokens
+/api/companies, /api/pushes/:c/latest
+/api/repos/:c/{status,list,lineage,show,evolution,forge-link}
+```
+
+인증 모델:
+
+- **읽기** (GET 엔드포인트, viewer, 프로필) — 공개.
+- **푸시** (`POST /api/push`) — `Authorization: Bearer glhub_pat_…` 필수. 어떤 `company_id`에 처음 push한 사용자가 owner로 등록되며, 다른 사용자의 토큰으로는 같은 `company_id`에 push할 수 없습니다 (`403`).
+- **Forge 링크** (`POST /api/repos/:c/forge-link`) — owner 전용.
+- **웹훅** — `X-Hub-Signature-256` HMAC-SHA256 서명 검증 필수.
+
+self-host는 다른 모델을 따릅니다. 모든 기능 활성화, 인증 경계 없음, `glctl`을 직접 subprocess로 실행.
+
+## 실행 (self-host)
 
 Repository root에서:
 
@@ -265,16 +300,63 @@ Body:
 - `kind=comment` -> tags: `comment`, `glhub-note`
 - `kind=edit` -> tags: `edit`, `glhub-note`; text도 `do` retrospective item으로 기록됩니다.
 
+### Forge Link
+
+```http
+GET  /api/repos/:companyId/forge-link
+POST /api/repos/:companyId/forge-link
+```
+
+GET은 공개. POST는 owner 전용(같은 사용자 Bearer 토큰 또는 활성 세션). 쓰기 body:
+
+```json
+{ "url": "https://github.com/owner/repo" }
+```
+
+URL host로부터 provider가 자동 추론됩니다(`github`, `gitlab`, `codeberg`, `forgejo`, `bitbucket`, 그 외 `custom`). 저장·반환 형태:
+
+```json
+{
+  "schema_version": "glhub-forge-link/v1",
+  "company_id": "demo",
+  "provider": "github",
+  "repo": "owner/repo",
+  "url": "https://github.com/owner/repo",
+  "set_by_user_id": "...",
+  "set_by_login": "...",
+  "set_at": "..."
+}
+```
+
+viewer는 로드 시 이 endpoint를 fetch하여 brand 옆에 배지를 그립니다. 프로필 페이지도 프로젝트별로 같은 배지를 표시합니다.
+
+### Webhook (hosted)
+
+```http
+POST /webhooks/github
+```
+
+GitHub App webhook event를 수신합니다. 설정된 `GITHUB_WEBHOOK_SECRET`로 `X-Hub-Signature-256` HMAC-SHA256 서명을 검증합니다. event 메타데이터와 전체 payload를 다음에 저장합니다.
+
+```text
+glhub/webhooks/{event}/{delivery_id}.json
+```
+
+성공 시 `202`, 서명 불일치 시 `401`, webhook secret 미설정 시 `503`을 반환합니다.
+
 ### Push Snapshot
 
 ```http
 POST /api/push
 ```
 
+hosted endpoint은 `Authorization: Bearer glhub_pat_…` 필수입니다. 어떤 `company_id`에 처음 push한 사용자가 owner로 등록되며, 이후 다른 토큰으로는 `403`. self-host는 인증 없는 push도 허용합니다.
+
 사용 예:
 
 ```sh
-glctl push --remote http://127.0.0.1:3201
+glctl push --remote https://glhub.baryon.ai     # hosted, `glctl login` 필요
+glctl push --remote http://127.0.0.1:3201       # self-host, 인증 없음
 ```
 
 ## R2 Storage
@@ -316,7 +398,7 @@ cd glctl
 cargo build --release
 ```
 
-Push:
+### Self-host push
 
 ```sh
 GLCTL_COMPANY_ID=demo_company \
@@ -324,15 +406,42 @@ GLCTL_DATA_DIR="$HOME/.glctl/data" \
 ./target/release/glctl push --remote http://127.0.0.1:3201
 ```
 
-임시 hosted endpoint:
+### Hosted push (로그인 필요)
+
+브라우저 인증을 한 번 거치면 토큰이 저장됩니다.
+
+```sh
+glctl login
+# 브라우저 자동 오픈 → GitHub OAuth → 토큰 발급 → ~/.glctl/config에 저장
+```
+
+Headless / CI 환경에서는 `https://glhub.baryon.ai/settings`에서 토큰을 발급한 뒤 직접 저장:
+
+```sh
+glctl auth --token glhub_pat_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+이후 push:
 
 ```sh
 GLCTL_COMPANY_ID=demo_company \
 GLCTL_DATA_DIR="$HOME/.glctl/data" \
-./target/release/glctl push --remote https://glhub.baryon.ai
+glctl push --remote https://glhub.baryon.ai
 ```
 
-`--remote`과 `GLHUB_URL`이 모두 없으면 `glctl push`는 기본값으로 `https://glhub.baryon.ai`를 사용합니다.
+`--remote`과 `GLHUB_URL`이 모두 없으면 `glctl push`는 기본값으로 `https://glhub.baryon.ai`를 사용합니다. 토큰 우선순위: `--token` > `GLHUB_TOKEN` > `~/.glctl/config`.
+
+### Forge 연결
+
+`company_id`에 첫 push를 보낸 후, viewer와 프로필 페이지에 backlink 배지를 띄우려면 forge URL을 등록합니다. provider(github / gitlab / codeberg / forgejo / bitbucket)는 URL에서 자동 추론됩니다.
+
+```sh
+TOKEN=$(jq -r .token ~/.glctl/config)
+curl -X POST https://glhub.baryon.ai/api/repos/demo_company/forge-link \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://github.com/your/repo"}'
+```
 
 ## 검증
 
