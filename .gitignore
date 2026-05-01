@@ -24,3 +24,5 @@ _workspace/
 !.env.example
 .KEY/
 *.pem
+.ralph/
+.ralphrc

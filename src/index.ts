@@ -318,6 +318,7 @@ async function evolutionDocument(companyId: string, id: string): Promise<JsonVal
           score: parentScore,
           success: parent.metrics?.success ?? null,
           tags: parent.tags || [],
+          branch: parent.branch ?? null,
         }
       : null,
     transition: {
@@ -350,6 +351,7 @@ async function evolutionDocument(companyId: string, id: string): Promise<JsonVal
       success: current.metrics?.success ?? null,
       tags: current.tags || [],
       created_at: current.created_at || null,
+      branch: current.branch ?? null,
     },
     next: children.map((child) => ({
       id: child.id,

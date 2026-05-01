@@ -13,6 +13,7 @@ export type GenerationRecord = {
   id: string;
   parent_id?: string | null;
   created_at?: string;
+  branch?: string | null;
   soul?: string;
   gains?: string[];
   losses?: string[];
@@ -42,6 +43,7 @@ export type LineageNode = {
   success?: boolean;
   created_at?: string;
   tags?: string[];
+  branch?: string | null;
 };
 
 export type LineageResult = {

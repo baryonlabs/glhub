@@ -24,6 +24,7 @@ export function lineageFromPush(payload: PushPayload): LineageResult {
       success: typeof generation.metrics?.success === "boolean" ? generation.metrics.success : false,
       created_at: generation.created_at || "",
       tags: generation.tags || [],
+      branch: generation.branch ?? null,
     })),
     edges: Array.isArray(payload.relations)
       ? payload.relations.filter((item): item is LineageResult["edges"][number] => {
@@ -73,6 +74,7 @@ export function evolutionDocumentFromPush(payload: PushPayload, id: string): Jso
           score: parentScore,
           success: parent.metrics?.success ?? null,
           tags: parent.tags || [],
+          branch: parent.branch ?? null,
         }
       : null,
     transition: {
@@ -105,6 +107,7 @@ export function evolutionDocumentFromPush(payload: PushPayload, id: string): Jso
       success: current.metrics?.success ?? null,
       tags: current.tags || [],
       created_at: current.created_at || null,
+      branch: current.branch ?? null,
     },
     next: children.map((child) => ({
       id: child.id,

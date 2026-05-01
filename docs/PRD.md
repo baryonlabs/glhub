@@ -224,9 +224,10 @@ for forge metadata.
 
 ## 10. Open questions
 
-1. Should `branch?: string` be a first-class field on `GenerationRecord` to
-   support harness-team thought-experiment branching natively, or stay a tag
-   prefix (`branch:experiment/foo`)? schema-keeper to decide post Wave 2.
+1. ~~Should `branch?: string` be a first-class field on `GenerationRecord`?~~
+   **Resolved 2026-05-02**: yes. Implemented additively (older records without
+   `branch` continue to read as `null` / "main"). See `docs/SPEC.md §2.1` and
+   §10.
 2. Should the hosted endpoint accept GitHub App webhook events linked to a
    specific `company_id` automatically (today they are stored generically
    under `glhub/webhooks/`)? Wave 4 candidate.

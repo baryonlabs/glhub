@@ -412,7 +412,8 @@ export function indexHtml(): string {
         noConfigPatches: "No config patches.",
         noChildren: "No child generations yet.",
         score: "score",
-        success: "success"
+        success: "success",
+        branch: "Branch"
       },
       ko: {
         tagline: "진화 계보 저장소",
@@ -470,7 +471,8 @@ export function indexHtml(): string {
         noConfigPatches: "설정 패치가 없습니다.",
         noChildren: "아직 자식 generation이 없습니다.",
         score: "점수",
-        success: "성공"
+        success: "성공",
+        branch: "브랜치"
       }
     };
     const state = {
@@ -678,10 +680,10 @@ export function indexHtml(): string {
         '<div class="evo-title">' + esc(tc(doc.title || doc.id)) + '</div>' +
         '<div class="evo-flow">' +
           '<div class="evo-card"><div class="evo-label">' + t("before") + '</div>' +
-            (before ? '<div><strong>' + esc(before.id) + '</strong></div><div>' + esc(tc(before.soul)) + '</div><div class="evo-score">' + esc(before.score) + '</div>' : '<div class="evo-score">' + t("seed") + '</div><div class="muted">' + t("noParent") + '</div>') +
+            (before ? '<div><strong>' + esc(before.id) + '</strong></div><div>' + esc(tc(before.soul)) + '</div><div class="evo-score">' + esc(before.score) + '</div>' + (before.branch ? '<div class="muted" style="font-size:12px">' + esc(before.branch) + '</div>' : '') : '<div class="evo-score">' + t("seed") + '</div><div class="muted">' + t("noParent") + '</div>') +
           '</div>' +
           '<div class="evo-arrow">-></div>' +
-          '<div class="evo-card"><div class="evo-label">' + t("after") + '</div><div><strong>' + esc(after.id) + '</strong></div><div>' + esc(tc(after.soul)) + '</div><div class="evo-score">' + esc(after.score) + ' <span class="' + deltaClass + '" style="font-size:14px">' + deltaText + '</span></div></div>' +
+          '<div class="evo-card"><div class="evo-label">' + t("after") + '</div><div><strong>' + esc(after.id) + '</strong></div><div>' + esc(tc(after.soul)) + '</div><div class="evo-score">' + esc(after.score) + ' <span class="' + deltaClass + '" style="font-size:14px">' + deltaText + '</span></div>' + (after.branch ? '<div class="muted" style="font-size:12px">' + esc(after.branch) + '</div>' : '') + '</div>' +
         '</div>' +
         '<div class="evo-section"><div class="evo-label">' + t("why") + '</div><div>' + esc(transition.note ? tc(transition.note) : t("noNote")) + '</div></div>' +
         '<div class="evo-section"><div class="evo-label">' + t("retroRules") + '</div><div class="retro-grid">' +
@@ -735,10 +737,11 @@ export function indexHtml(): string {
       return '<article class="compare-doc ' + side + '">' +
         '<div class="compare-doc-header"><span class="doc-chip ' + side + '">' + label + '</span><div class="evo-title" style="margin-top:8px">' + esc(tc(doc.title || doc.id)) + '</div><div class="muted">' + esc(doc.id) + '</div></div>' +
         '<div class="compare-doc-body">' +
-          '<div class="compare-prop"><div class="key">' + t("before") + '</div><div class="value">' + (before ? esc(before.id) + '<br>' + esc(tc(before.soul)) : t("seed")) + '</div></div>' +
-          '<div class="compare-prop"><div class="key">' + t("after") + '</div><div class="value"><strong>' + esc(after.id) + '</strong><br>' + esc(tc(after.soul)) + '</div></div>' +
+          '<div class="compare-prop"><div class="key">' + t("before") + '</div><div class="value">' + (before ? esc(before.id) + '<br>' + esc(tc(before.soul)) + (before.branch ? '<br><span class="muted" style="font-size:11px">' + esc(before.branch) + '</span>' : '') : t("seed")) + '</div></div>' +
+          '<div class="compare-prop"><div class="key">' + t("after") + '</div><div class="value"><strong>' + esc(after.id) + '</strong><br>' + esc(tc(after.soul)) + (after.branch ? '<br><span class="muted" style="font-size:11px">' + esc(after.branch) + '</span>' : '') + '</div></div>' +
           '<div class="compare-prop"><div class="key">' + t("score") + '</div><div class="value"><span class="score-pill">' + esc(after.score) + ' <span class="' + deltaClass + '">' + deltaText + '</span></span></div></div>' +
           '<div class="compare-prop"><div class="key">' + t("tags") + '</div><div class="value row">' + tags + '</div></div>' +
+          (after.branch ? '<div class="compare-prop"><div class="key">' + t("branch") + '</div><div class="value">' + esc(after.branch) + '</div></div>' : '') +
           '<div class="evo-section"><div class="evo-label">' + t("why") + '</div><div>' + esc(transition.note ? tc(transition.note) : t("noNote")) + '</div></div>' +
           '<div class="evo-section"><div class="evo-label">' + t("doNot") + '</div>' + miniList(retro.do_not || []) + '</div>' +
           '<div class="evo-section"><div class="evo-label">' + t("do") + '</div>' + miniList(retro.do || []) + '</div>' +

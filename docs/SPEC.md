@@ -77,6 +77,7 @@ type GenerationRecord = {
   id: string;                     // gen-YYYYMMDD-NNN
   parent_id?: string | null;
   created_at?: string;            // ISO 8601 UTC
+  branch?: string | null;         // experiment/{topic} or omitted/null = main
   soul?: string;                  // human-readable title / intent
   gains?: string[];
   losses?: string[];
@@ -418,10 +419,13 @@ Adding a new hosted-only endpoint (e.g. dashboard counters) requires either:
 
 ## 10. Out-of-spec / TODO
 
-- `branch?: string` first-class field on `GenerationRecord` (currently `tags`
-  prefix). Decision pending PR-by-PR experimentation under
-  `experiment/i18n-ja-zh-sync` etc.
-- Glctl `--token` flag (currently relies on env / config). Likely small.
+- ~~`branch?: string` first-class field on `GenerationRecord`~~ ✅ landed
+  2026-05-02. `branch?: string | null` is now part of `GenerationRecord` and
+  flows through `LineageNode`, `lineageFromPush`, `evolutionDocumentFromPush`,
+  the embedded viewer (Branch / 브랜치 label under before/after cards), and
+  the side-by-side compare documents. `glctl --branch <name>` flag for
+  setting it on `glctl new` is the next step.
+- `glctl --token` flag (currently relies on env / config). Likely small.
 - Worker bundle size monitoring CI step.
 - Self-host migration tool when `schema_version` v2 lands.
 - viewer-side `Accept-Language` detection for the embedded HTML viewer.
