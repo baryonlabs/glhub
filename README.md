@@ -1,5 +1,11 @@
 # glhub
 
+[English](README.md) | [한국어](README.ko.md) | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+
+<p align="center">
+  <img src="assets/glhub-logo.png" alt="glhub logo" width="640">
+</p>
+
 `glhub` is the Generation Lineage Hub for Nautilus.
 
 Nautilus is the meta-loop and system-of-record for AI agent work. Paperclip is one frontend (control plane / board UI); other frontends are possible. `glhub` and `glctl` serve Nautilus directly — they do not depend on any single frontend.
@@ -490,6 +496,17 @@ GLCTL_COMPANY_ID=demo_company \
 GLCTL_DATA_DIR="$HOME/.glctl/data" \
 ./target/release/glctl push --remote http://127.0.0.1:3201
 ```
+
+For the temporary hosted endpoint:
+
+```sh
+GLCTL_COMPANY_ID=demo_company \
+GLCTL_DATA_DIR="$HOME/.glctl/data" \
+./target/release/glctl push --remote https://glhub.baryon.ai
+```
+
+`glctl push` uses `https://glhub.baryon.ai` by default when neither `--remote`
+nor `GLHUB_URL` is set.
 
 ## Verification
 
