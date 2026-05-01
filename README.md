@@ -211,6 +211,14 @@ https://glhub.baryon.ai
 ```
 
 <p align="center">
+  <a href="https://glhub.baryon.ai/">
+    <img src="assets/screenshots/landing.png" alt="Public landing page at glhub.baryon.ai for signed-out visitors" width="800">
+  </a>
+  <br>
+  <em>Public landing at <code>/</code> — what signed-out visitors see.</em>
+</p>
+
+<p align="center">
   <a href="https://glhub.baryon.ai/hongsw">
     <img src="assets/screenshots/profile.png" alt="Owner profile at glhub.baryon.ai/hongsw — projects with forge backlink badges" width="800">
   </a>

@@ -150,6 +150,14 @@ https://glhub.baryon.ai
 ```
 
 <p align="center">
+  <a href="https://glhub.baryon.ai/">
+    <img src="assets/screenshots/landing.png" alt="glhub.baryon.ai 비로그인 방문자에게 보이는 공개 랜딩 페이지" width="800">
+  </a>
+  <br>
+  <em><code>/</code> 공개 랜딩 — 비로그인 방문자가 처음 보는 화면.</em>
+</p>
+
+<p align="center">
   <a href="https://glhub.baryon.ai/hongsw">
     <img src="assets/screenshots/profile.png" alt="glhub.baryon.ai/hongsw 오너 프로필 — 프로젝트와 forge 배지" width="800">
   </a>
