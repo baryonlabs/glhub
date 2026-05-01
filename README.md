@@ -1,6 +1,8 @@
 # glhub
 
-`glhub` is the Generation Lineage Hub for Paperclip.
+`glhub` is the Generation Lineage Hub for Nautilus.
+
+Nautilus is the meta-loop and system-of-record for AI agent work. Paperclip is one frontend (control plane / board UI); other frontends are possible. `glhub` and `glctl` serve Nautilus directly — they do not depend on any single frontend.
 
 If GitHub is a thinking space for code review through commits and pull requests,
 glhub is a thinking space for evolution review through generations and evolution
