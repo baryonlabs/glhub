@@ -235,7 +235,13 @@ export function landingHtml(lang: Lang = "en"): string {
     <div class="panel">
       <h2>${s.panel1Title}</h2>
       <p>${s.panel1Body}</p>
-      <pre>glctl login
+      <pre># 1. install (requires Rust toolchain — https://rustup.rs)
+cargo install --git https://github.com/baryonlabs/glctl
+
+# 2. authenticate
+glctl login
+
+# 3. push your first lineage snapshot
 glctl push --remote https://glhub.baryon.ai</pre>
     </div>
 
