@@ -140,7 +140,7 @@ Comment と edit proposal は child generation として保存されます。glh
 repository root で:
 
 ```sh
-pnpm --filter @paperclipai/glhub build
+pnpm --filter @baryonlabs/glhub build
 node glhub/dist/index.js
 ```
 
@@ -339,8 +339,8 @@ GLCTL_DATA_DIR="$HOME/.glctl/data" \
 repository root で:
 
 ```sh
-pnpm --filter @paperclipai/glhub typecheck
-pnpm --filter @paperclipai/glhub build
+pnpm --filter @baryonlabs/glhub typecheck
+pnpm --filter @baryonlabs/glhub build
 ```
 
 glhub 実行中:

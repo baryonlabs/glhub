@@ -207,7 +207,7 @@ self-host는 다른 모델을 따릅니다. 모든 기능 활성화, 인증 경�
 Repository root에서:
 
 ```sh
-pnpm --filter @paperclipai/glhub build
+pnpm --filter @baryonlabs/glhub build
 node glhub/dist/index.js
 ```
 
@@ -480,8 +480,8 @@ curl -X POST https://glhub.baryon.ai/api/repos/demo_company/forge-link \
 Repository root에서:
 
 ```sh
-pnpm --filter @paperclipai/glhub typecheck
-pnpm --filter @paperclipai/glhub build
+pnpm --filter @baryonlabs/glhub typecheck
+pnpm --filter @baryonlabs/glhub build
 ```
 
 glhub 실행 중:

@@ -1,6 +1,6 @@
 # glhub — Generation Lineage Hub
 
-이 저장소는 Paperclip의 generation lineage를 받아 저장·브라우징하는 별도 제품(@paperclipai/glhub)이다. README.md가 비전과 forge 중립성 정책의 SoT.
+이 저장소는 Paperclip의 generation lineage를 받아 저장·브라우징하는 별도 제품(@baryonlabs/glhub)이다. README.md가 비전과 forge 중립성 정책의 SoT.
 
 ---
 

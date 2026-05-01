@@ -137,7 +137,7 @@ Comment 和 edit proposal 会保存为 child generation。glhub 不会覆盖原�
 在 repository root：
 
 ```sh
-pnpm --filter @paperclipai/glhub build
+pnpm --filter @baryonlabs/glhub build
 node glhub/dist/index.js
 ```
 
@@ -336,8 +336,8 @@ GLCTL_DATA_DIR="$HOME/.glctl/data" \
 在 repository root：
 
 ```sh
-pnpm --filter @paperclipai/glhub typecheck
-pnpm --filter @paperclipai/glhub build
+pnpm --filter @baryonlabs/glhub typecheck
+pnpm --filter @baryonlabs/glhub build
 ```
 
 glhub 运行时：
