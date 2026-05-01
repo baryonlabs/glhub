@@ -41,7 +41,7 @@ import {
 } from "./core/github-webhook.js";
 import { profileHtml, type OwnerProjectEntry } from "./core/profile-html.js";
 import { inferProvider, type ForgeLink } from "./core/forge-link.js";
-import { landingHtml } from "./core/landing-html.js";
+import { detectLang, landingHtml } from "./core/landing-html.js";
 
 export interface Env {
   GLHUB_R2: R2Bucket;
@@ -400,7 +400,11 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (method === "GET" && pathname === "/") {
     const session = await readSession(env, request);
     if (!session) {
-      return htmlResponse(landingHtml());
+      const lang = detectLang(
+        url.searchParams.get("lang"),
+        request.headers.get("accept-language"),
+      );
+      return htmlResponse(landingHtml(lang));
     }
     return redirectResponse(`/${encodeURIComponent(session.login)}`);
   }
