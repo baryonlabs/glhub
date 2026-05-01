@@ -132,7 +132,42 @@ Web view 支持：
 
 Comment 和 edit proposal 会保存为 child generation。glhub 不会覆盖原始 generation document，因此 lineage 保持可审计。
 
-## 运行
+## Hosted Endpoint
+
+托管的 glhub 实例运行在以下地址：
+
+```text
+https://glhub.baryon.ai
+```
+
+此部署是仅暴露 *push 接收 + viewer* 面的 Cloudflare Worker。所有 push 快照通过 `POST /api/push` 接收（需要 Bearer token），同一个 viewer 显示所有已 push 的项目。Mutation 端点（`seed-demo`、`generations`、`comment`）在 hosted 上返回 `501`，仅在 self-host 环境下可用。
+
+URL 结构：
+
+```text
+/                                    # 登录门户 (重定向到 GitHub OAuth)
+/{owner}                             # 公开个人资料 — 项目列表 + forge 徽章
+/{owner}/{project_id}                # 已 push 项目的公开 viewer
+/settings                            # Personal Access Token 发放和管理 (需登录)
+/login/cli                           # `glctl login` 使用的 loopback OAuth flow
+/auth/github/{login,callback,logout}
+/webhooks/github                     # HMAC 验证后记录到 R2
+/api/health                          # auth + webhook 状态报告
+/api/me, /api/tokens
+/api/companies, /api/pushes/:c/latest
+/api/repos/:c/{status,list,lineage,show,evolution,forge-link}
+```
+
+认证模型：
+
+- **读取** (GET 端点、viewer、个人资料) — 公开。
+- **推送** (`POST /api/push`) — 必须有 `Authorization: Bearer glhub_pat_…`。第一次向某个 `company_id` push 的用户被注册为 owner，其他用户的 token 无法向同一 `company_id` push (`403`)。
+- **Forge 链接** (`POST /api/repos/:c/forge-link`) — 仅 owner 可写。
+- **Webhook** — 必须有 `X-Hub-Signature-256` HMAC-SHA256 签名验证。
+
+self-host 遵循不同的模型。全功能启用，无认证边界，直接以 subprocess 方式调用 `glctl`。
+
+## 运行 (self-host)
 
 在 repository root：
 
@@ -262,16 +297,63 @@ Body：
 - `kind=comment` -> tags: `comment`, `glhub-note`
 - `kind=edit` -> tags: `edit`, `glhub-note`；text 也会记录为 `do` retrospective item
 
+### Forge Link
+
+```http
+GET  /api/repos/:companyId/forge-link
+POST /api/repos/:companyId/forge-link
+```
+
+GET 公开。POST 仅 owner（同一用户的 Bearer token 或活跃 session）。写入 body：
+
+```json
+{ "url": "https://github.com/owner/repo" }
+```
+
+provider 从 URL host 自动推断（`github`、`gitlab`、`codeberg`、`forgejo`、`bitbucket`，其他为 `custom`）。存储和返回格式：
+
+```json
+{
+  "schema_version": "glhub-forge-link/v1",
+  "company_id": "demo",
+  "provider": "github",
+  "repo": "owner/repo",
+  "url": "https://github.com/owner/repo",
+  "set_by_user_id": "...",
+  "set_by_login": "...",
+  "set_at": "..."
+}
+```
+
+viewer 加载时会 fetch 此 endpoint，在 brand 旁显示徽章。个人资料页对每个项目也显示同样的徽章。
+
+### Webhook (hosted)
+
+```http
+POST /webhooks/github
+```
+
+接收 GitHub App webhook 事件。使用配置的 `GITHUB_WEBHOOK_SECRET` 验证 `X-Hub-Signature-256` HMAC-SHA256 签名。事件元数据和完整 payload 保存到：
+
+```text
+glhub/webhooks/{event}/{delivery_id}.json
+```
+
+成功返回 `202`，签名不匹配返回 `401`，未配置 webhook secret 返回 `503`。
+
 ### Push Snapshot
 
 ```http
 POST /api/push
 ```
 
+hosted endpoint 必须有 `Authorization: Bearer glhub_pat_…`。第一次向某个 `company_id` push 的用户被注册为 owner，之后其他 token 会得到 `403`。self-host 允许无认证 push。
+
 使用方式：
 
 ```sh
-glctl push --remote http://127.0.0.1:3201
+glctl push --remote https://glhub.baryon.ai     # hosted, 需要 `glctl login`
+glctl push --remote http://127.0.0.1:3201       # self-host, 无认证
 ```
 
 ## R2 Storage
@@ -313,7 +395,7 @@ cd glctl
 cargo build --release
 ```
 
-Push：
+### Self-host push
 
 ```sh
 GLCTL_COMPANY_ID=demo_company \
@@ -321,15 +403,42 @@ GLCTL_DATA_DIR="$HOME/.glctl/data" \
 ./target/release/glctl push --remote http://127.0.0.1:3201
 ```
 
-临时 hosted endpoint：
+### Hosted push (需要登录)
+
+通过浏览器认证一次后 token 会被保存。
+
+```sh
+glctl login
+# 浏览器自动打开 → GitHub OAuth → token 发放 → 保存到 ~/.glctl/config
+```
+
+Headless / CI 环境可在 `https://glhub.baryon.ai/settings` 发放 token 并直接保存：
+
+```sh
+glctl auth --token glhub_pat_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+之后 push：
 
 ```sh
 GLCTL_COMPANY_ID=demo_company \
 GLCTL_DATA_DIR="$HOME/.glctl/data" \
-./target/release/glctl push --remote https://glhub.baryon.ai
+glctl push --remote https://glhub.baryon.ai
 ```
 
-当没有设置 `--remote` 和 `GLHUB_URL` 时，`glctl push` 默认使用 `https://glhub.baryon.ai`。
+当没有设置 `--remote` 和 `GLHUB_URL` 时，`glctl push` 默认使用 `https://glhub.baryon.ai`。token 优先级：`--token` > `GLHUB_TOKEN` > `~/.glctl/config`。
+
+### Forge 连接
+
+第一次向 `company_id` push 之后，注册 forge URL 让 viewer 和个人资料页显示 backlink 徽章。provider（github / gitlab / codeberg / forgejo / bitbucket）从 URL 自动推断。
+
+```sh
+TOKEN=$(jq -r .token ~/.glctl/config)
+curl -X POST https://glhub.baryon.ai/api/repos/demo_company/forge-link \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://github.com/your/repo"}'
+```
 
 ## 验证
 
