@@ -12,6 +12,8 @@
   </a>
 </p>
 
+<sub>📄 Product / engineering grounding: [docs/PRD.md](docs/PRD.md) · [docs/SPEC.md](docs/SPEC.md). The landing page at <a href="https://glhub.baryon.ai/">glhub.baryon.ai</a> is the canonical product description (the PRD's North Star tracks it).</sub>
+
 `glctl` is the local control tool for generation lineage. It exists because AI
 agent work needs more than a final patch, score, or chat transcript. Each run
 needs a durable record of where it came from, what changed, what improved, what

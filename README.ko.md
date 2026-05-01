@@ -12,6 +12,8 @@
   </a>
 </p>
 
+<sub>📄 Product / Engineering 정합 문서: <a href="docs/PRD.md">docs/PRD.md</a> · <a href="docs/SPEC.md">docs/SPEC.md</a>. <a href="https://glhub.baryon.ai/">glhub.baryon.ai</a> 랜딩 페이지가 제품 설명의 SoT이며, PRD의 North Star가 이를 추적합니다.</sub>
+
 `glctl`은 generation lineage를 다루는 로컬 제어 도구입니다. AI 에이전트
 작업에는 최종 patch, score, chat transcript만으로는 부족하기 때문에
 필요합니다. 각 run은 어디에서 왔는지, 무엇이 바뀌었는지, 무엇이
