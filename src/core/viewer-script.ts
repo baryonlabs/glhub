@@ -270,93 +270,77 @@ export const viewerScript = `
     }
     function renderGraph(lineage) {
       const nodes = lineage.nodes || [];
-      const edges = lineage.edges || [];
-      const NODE_W = 152;
-      const NODE_H = 84;
-      const STEP = 210;
-      const PAD_X = 100;
-      const ROW_Y = 110;
-      const height = 240;
-      const width = Math.max(720, nodes.length * STEP + PAD_X);
-      const positions = new Map(nodes.map((node, index) => [node.id, { x: PAD_X + index * STEP, y: ROW_Y }]));
-      const edgeSvg = edges.map((edge) => {
-        const a = positions.get(edge.from);
-        const b = positions.get(edge.to);
-        if (!a || !b) return "";
-        return '<line x1="' + (a.x + NODE_W / 2) + '" y1="' + a.y + '" x2="' + (b.x - NODE_W / 2) + '" y2="' + b.y + '" stroke="#7a8699" stroke-width="2" marker-end="url(#arrow)" />';
-      }).join("");
-      const nodeSvg = nodes.map((node) => {
-        const p = positions.get(node.id);
-        const fill = node.success ? "#ecfdf3" : "#fff1f0";
-        const stroke = node.id === state.selected ? "#375dfb" : "#cbd5e1";
-        const strokeWidth = node.id === state.selected ? "3" : "2";
+      const graphEl = $("graph");
+      if (nodes.length === 0) {
+        graphEl.innerHTML = '<div class="lineage-empty muted">' + t("noLineage") + '</div>';
+        return;
+      }
+      const ids = nodes.map((n) => n.id);
+      const items = nodes.map((node, i) => {
+        const isSelected = node.id === state.selected;
         const idLabel = node.id.replace(/^gen-/, "");
         const soulText = node.soul ? String(node.soul) : "";
-        const soulLabel = soulText.slice(0, 22);
-        const aria = idLabel + " · " + t("score") + " " + Number(node.score).toFixed(2) + (soulText ? " · " + soulText : "");
-        const isSelected = node.id === state.selected;
-        return '<g role="button" tabindex="0" aria-label="' + esc(aria) + '" aria-pressed="' + (isSelected ? "true" : "false") + '" data-id="' + node.id + '" class="node-g' + (isSelected ? " is-selected" : "") + '">' +
-          '<title>' + esc(soulText || idLabel) + '</title>' +
-          '<rect class="node-rect" x="' + (p.x - NODE_W / 2) + '" y="' + (p.y - NODE_H / 2) + '" width="' + NODE_W + '" height="' + NODE_H + '" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" />' +
-          '<text x="' + p.x + '" y="' + (p.y - 18) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#171a1f">' + esc(idLabel) + '</text>' +
-          '<text x="' + p.x + '" y="' + (p.y + 4) + '" text-anchor="middle" font-size="12" fill="#475467">' + t("score") + ' ' + Number(node.score).toFixed(2) + '</text>' +
-          (soulLabel ? '<text x="' + p.x + '" y="' + (p.y + 24) + '" text-anchor="middle" font-size="11" fill="#7a8699">' + esc(soulLabel) + (soulText.length > 22 ? "…" : "") + '</text>' : '') +
-          '</g>';
+        const aria = idLabel + " · " + t("score") + " " + Number(node.score).toFixed(2) + (soulText ? " · " + tc(soulText) : "");
+        const tagBadges = (node.tags || []).slice(0, 5).map((tag) => '<span class="lineage-tag">' + esc(tag) + '</span>').join("");
+        const branchBadge = node.branch ? '<span class="lineage-branch">' + esc(node.branch) + '</span>' : "";
+        const dotClass = node.success ? "ok" : "bad";
+        const railCls = (i === 0 ? " first" : "") + (i === nodes.length - 1 ? " last" : "");
+        const rowCls = "lineage-row" + (isSelected ? " is-selected" : "");
+        return '<li class="' + rowCls + '"' +
+          ' role="button" tabindex="0"' +
+          ' data-id="' + node.id + '"' +
+          ' aria-pressed="' + (isSelected ? "true" : "false") + '"' +
+          ' aria-label="' + esc(aria) + '"' +
+          ' title="' + esc(soulText || idLabel) + '">' +
+          '<div class="lineage-rail' + railCls + '">' +
+            '<span class="lineage-marker"><span class="lineage-dot ' + dotClass + '"></span></span>' +
+          '</div>' +
+          '<div class="lineage-card">' +
+            '<div class="lineage-meta">' +
+              '<span class="lineage-id">' + esc(idLabel) + '</span>' +
+              '<span class="lineage-score">' + t("score") + " " + Number(node.score).toFixed(2) + '</span>' +
+              branchBadge +
+            '</div>' +
+            (soulText ? '<div class="lineage-soul">' + esc(tc(soulText)) + '</div>' : '') +
+            (tagBadges ? '<div class="lineage-tags">' + tagBadges + '</div>' : '') +
+          '</div>' +
+        '</li>';
       }).join("");
-      const graphEl = $("graph");
-      graphEl.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" style="display:block">' +
-        '<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8699"/></marker></defs>' +
-        edgeSvg + nodeSvg + '</svg>';
-      const nodeEls = graphEl.querySelectorAll("g[data-id]");
-      const ids = nodes.map((n) => n.id);
-      const focusNode = (id) => {
-        const el = graphEl.querySelector('g[data-id="' + id + '"]');
+      graphEl.innerHTML = '<ol class="lineage-list">' + items + '</ol>';
+      const rowEls = graphEl.querySelectorAll(".lineage-row");
+      const focusRow = (id) => {
+        const el = graphEl.querySelector('.lineage-row[data-id="' + id + '"]');
         if (el && typeof el.focus === "function") el.focus({ preventScroll: true });
       };
-      nodeEls.forEach((el) => {
+      rowEls.forEach((el) => {
         el.addEventListener("click", () => selectGeneration(el.getAttribute("data-id")));
         el.addEventListener("keydown", (e) => {
           const idx = ids.indexOf(el.getAttribute("data-id"));
-          if (e.key === "Enter" || e.key === " ") {
+          let nextId = null;
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectGeneration(el.getAttribute("data-id")); return; }
+          if ((e.key === "ArrowDown" || e.key === "ArrowRight") && idx < ids.length - 1) nextId = ids[idx + 1];
+          if ((e.key === "ArrowUp"   || e.key === "ArrowLeft")  && idx > 0)               nextId = ids[idx - 1];
+          if (e.key === "Home" && ids.length > 0) nextId = ids[0];
+          if (e.key === "End"  && ids.length > 0) nextId = ids[ids.length - 1];
+          if (nextId) {
             e.preventDefault();
-            selectGeneration(el.getAttribute("data-id"));
-          } else if (e.key === "ArrowRight" && idx < ids.length - 1) {
-            e.preventDefault();
-            const nextId = ids[idx + 1];
             selectGeneration(nextId);
-            focusNode(nextId);
-          } else if (e.key === "ArrowLeft" && idx > 0) {
-            e.preventDefault();
-            const prevId = ids[idx - 1];
-            selectGeneration(prevId);
-            focusNode(prevId);
-          } else if (e.key === "Home" && ids.length > 0) {
-            e.preventDefault();
-            selectGeneration(ids[0]);
-            focusNode(ids[0]);
-          } else if (e.key === "End" && ids.length > 0) {
-            e.preventDefault();
-            selectGeneration(ids[ids.length - 1]);
-            focusNode(ids[ids.length - 1]);
+            focusRow(nextId);
           }
         });
       });
-      if (state.selected && positions.has(state.selected)) {
-        const targetX = positions.get(state.selected).x;
-        const cw = graphEl.clientWidth || 720;
-        const left = Math.max(0, Math.min(width - cw, targetX - cw / 2));
-        const reduceMotion = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const useSmooth = state._graphCentered && !reduceMotion;
-        if (typeof graphEl.scrollTo === "function") {
+      if (state.selected) {
+        const sel = graphEl.querySelector('.lineage-row[data-id="' + state.selected + '"]');
+        if (sel && typeof sel.scrollIntoView === "function") {
+          const reduceMotion = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          const useSmooth = state._graphCentered && !reduceMotion;
           try {
-            graphEl.scrollTo({ left: left, behavior: useSmooth ? "smooth" : "auto" });
+            sel.scrollIntoView({ block: "nearest", behavior: useSmooth ? "smooth" : "auto" });
           } catch (_) {
-            graphEl.scrollLeft = left;
+            /* legacy browsers ignore options */
           }
-        } else {
-          graphEl.scrollLeft = left;
+          state._graphCentered = true;
         }
-        state._graphCentered = true;
       }
     }
     function renderEvolution(doc) {

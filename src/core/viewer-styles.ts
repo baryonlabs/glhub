@@ -280,45 +280,137 @@ export const viewerStyles = `
     .graph {
       position: relative;
       width: 100%;
-      min-height: 240px;
+      min-height: 200px;
+      max-height: 420px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fbfcfe;
-      overflow-x: auto;
-      overflow-y: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       scrollbar-gutter: stable;
     }
-    .graph svg {
-      max-width: none;
+    .lineage-empty {
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
     }
-    .graph .node-g {
+    .lineage-list {
+      list-style: none;
+      margin: 0;
+      padding: 6px 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .lineage-row {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+      gap: 12px;
+      padding: 10px 16px;
       cursor: pointer;
-      transition: transform 120ms ease, filter 120ms ease;
-      transform-box: fill-box;
-      transform-origin: center;
       outline: none;
+      transition: background 120ms ease;
     }
-    .graph .node-g:hover .node-rect {
-      filter: brightness(1.04);
+    .lineage-row:hover { background: rgba(55, 93, 251, 0.045); }
+    .lineage-row:focus-visible {
+      background: rgba(55, 93, 251, 0.06);
+      box-shadow: inset 3px 0 0 var(--accent-2);
     }
-    .graph .node-g:hover {
-      transform: translateY(-1px);
+    .lineage-row.is-selected {
+      background: rgba(55, 93, 251, 0.06);
+      box-shadow: inset 3px 0 0 var(--accent-2);
     }
-    .graph .node-g:focus-visible .node-rect {
-      stroke: #375dfb;
-      stroke-width: 3;
-      filter: drop-shadow(0 0 0 3px rgba(55, 93, 251, 0.25));
+    .lineage-rail {
+      position: relative;
+      display: grid;
+      place-items: center;
+      align-self: stretch;
     }
-    .graph .node-g.is-selected .node-rect {
-      filter: drop-shadow(0 2px 8px rgba(55, 93, 251, 0.18));
+    .lineage-rail::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: var(--line);
+      transform: translateX(-50%);
+    }
+    .lineage-rail.first::before { top: 50%; }
+    .lineage-rail.last::before { bottom: 50%; }
+    .lineage-marker {
+      position: relative;
+      z-index: 1;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #fff;
+      border: 2px solid #cbd5e1;
+      display: grid;
+      place-items: center;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .lineage-row.is-selected .lineage-marker {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 4px rgba(55, 93, 251, 0.18);
+    }
+    .lineage-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+    }
+    .lineage-dot.ok { background: var(--good); }
+    .lineage-dot.bad { background: var(--bad); }
+    .lineage-card {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .lineage-meta {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .lineage-id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--ink);
+    }
+    .lineage-score { font-size: 12px; color: var(--muted); }
+    .lineage-branch {
+      font-size: 11px;
+      color: #1849a9;
+      background: #eef4ff;
+      padding: 1px 8px;
+      border-radius: 999px;
+    }
+    .lineage-soul {
+      font-size: 13px;
+      color: #2a3140;
+      line-height: 1.45;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
+    .lineage-tags {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .lineage-tag {
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #f1f4f8;
+      color: var(--muted);
     }
     @media (prefers-reduced-motion: reduce) {
-      .graph .node-g {
-        transition: none;
-      }
-      .graph .node-g:hover {
-        transform: none;
-      }
+      .lineage-row { transition: none; }
+      .lineage-marker { transition: none; }
     }
     .status-ok { color: var(--good); font-weight: 700; }
     .status-bad { color: var(--bad); font-weight: 700; }
