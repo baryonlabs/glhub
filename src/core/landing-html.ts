@@ -607,6 +607,59 @@ const LANG_LABELS: Record<Lang, string> = {
 
 const FORGE_BADGES = ["GitHub", "GitLab", "Codeberg", "Forgejo", "Gitea", "Bitbucket"];
 
+// Nauti — the Nautilus-shell mascot. Chambers in the shell metaphorically
+// stand for generations in a lineage. Single eye peeks out of the latest
+// (largest) chamber. Three tentacles for personality.
+const NAUTI_SVG = `<svg viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg" class="nauti" role="img" aria-label="Nauti, the glhub mascot">
+  <defs>
+    <radialGradient id="nautiShell" cx="35%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#dcfce7"/>
+      <stop offset="55%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </radialGradient>
+    <radialGradient id="nautiCore" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a7f3d0"/>
+    </radialGradient>
+    <filter id="nautiShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dx="0" dy="6" result="offsetblur"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#nautiShadow)">
+    <circle cx="140" cy="140" r="120" fill="url(#nautiShell)" stroke="#0f2d24" stroke-width="3"/>
+    <g fill="none" stroke="#0f2d24" stroke-width="2" opacity="0.55" stroke-linecap="round">
+      <path d="M 140 140 A 20 20 0 1 1 140 100"/>
+      <path d="M 140 100 A 40 40 0 0 1 180 140"/>
+      <path d="M 180 140 A 60 60 0 0 1 140 200"/>
+      <path d="M 140 200 A 80 80 0 0 1 60 140"/>
+      <path d="M 60 140 A 100 100 0 0 1 140 40"/>
+      <path d="M 140 40 A 115 115 0 0 1 252 130"/>
+    </g>
+    <circle cx="140" cy="140" r="14" fill="url(#nautiCore)" stroke="#0f2d24" stroke-width="2"/>
+    <path d="M 235 145 q 28 6 32 30" fill="none" stroke="#0f2d24" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M 240 158 q 22 12 18 32" fill="none" stroke="#0f2d24" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M 232 166 q 8 18 -4 30" fill="none" stroke="#0f2d24" stroke-width="3.2" stroke-linecap="round"/>
+    <circle cx="222" cy="132" r="16" fill="#ffffff" stroke="#0f2d24" stroke-width="2.5"/>
+    <circle cx="227" cy="135" r="7" fill="#0f2d24"/>
+    <circle cx="229" cy="133" r="2.4" fill="#ffffff"/>
+    <path d="M 209 116 q 9 -7 21 -2" fill="none" stroke="#0f2d24" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+</svg>`;
+
+const NAUTI_MARK_SVG = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <circle cx="16" cy="16" r="14" fill="#b9f6da"/>
+  <g fill="none" stroke="#12251f" stroke-width="1.6" stroke-linecap="round">
+    <path d="M 16 16 A 3 3 0 1 1 16 11"/>
+    <path d="M 16 11 A 5 5 0 0 1 21 16"/>
+    <path d="M 21 16 A 7 7 0 0 1 16 23"/>
+    <path d="M 16 23 A 9 9 0 0 1 7 14"/>
+  </g>
+  <circle cx="16" cy="16" r="1.5" fill="#12251f"/>
+</svg>`;
+
 export function detectLang(query: string | null, acceptLanguage: string | null): Lang {
   if (query) {
     const q = query.toLowerCase();
@@ -736,16 +789,12 @@ export function landingHtml(lang: Lang = "en"): string {
       font-size: 16px;
     }
     .brand .mark {
-      width: 28px;
-      height: 28px;
-      border-radius: 7px;
+      width: 30px;
+      height: 30px;
       display: grid;
       place-items: center;
-      background: var(--accent);
-      color: #b9f6da;
-      font-size: 11px;
-      font-weight: 700;
     }
+    .brand .mark svg { width: 30px; height: 30px; }
     nav.primary {
       flex: 1;
       display: flex;
@@ -809,10 +858,39 @@ export function landingHtml(lang: Lang = "en"): string {
 
     /* ---- hero ---- */
     .hero {
-      padding-top: 72px;
+      padding-top: 56px;
       padding-bottom: 48px;
       background: radial-gradient(circle at 20% 0%, #eaf3ff 0%, transparent 55%),
                   radial-gradient(circle at 80% 0%, #e8fff3 0%, transparent 50%);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 40px;
+      align-items: center;
+    }
+    @media (max-width: 880px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 16px; }
+      .hero-mascot { order: -1; max-width: 220px; margin: 0 auto; }
+    }
+    .hero-mascot {
+      display: flex;
+      justify-content: center;
+      max-width: 360px;
+      margin-left: auto;
+    }
+    .hero-mascot svg.nauti {
+      width: 100%;
+      height: auto;
+      animation: nautiFloat 6s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes nautiFloat {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50%      { transform: translateY(-10px) rotate(2deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-mascot svg.nauti { animation: none; }
     }
     .hero h1 { max-width: 880px; }
     .hero p.lede { max-width: 720px; margin-bottom: 28px; }
@@ -1046,7 +1124,7 @@ export function landingHtml(lang: Lang = "en"): string {
   <header class="site">
     <div class="site-inner">
       <a class="brand" href="/">
-        <span class="mark">gl</span>
+        <span class="mark">${NAUTI_MARK_SVG}</span>
         <span>glhub</span>
       </a>
       <nav class="primary">
@@ -1065,18 +1143,23 @@ export function landingHtml(lang: Lang = "en"): string {
   </header>
 
   <section class="hero">
-    <div class="eyebrow">${s.heroEyebrow}</div>
-    <h1>${s.heroTitle}</h1>
-    <p class="lede">${s.heroSubtitle}</p>
-    <div class="cta-row">
-      <a class="btn primary" href="/auth/github/login">${s.heroCtaPrimary}</a>
-      <a class="btn" href="/hongsw/demo">${s.heroCtaSecondary}</a>
-      <a class="btn ghost" href="${REPO}" target="_blank" rel="noopener">${s.heroCtaTertiary}</a>
-    </div>
-    <div class="trust-strip">
-      <span>${s.trustGitHubLike}</span>
-      <span>${s.trustForgeNeutral}</span>
-      <span>${s.trustOpenSource}</span>
+    <div class="hero-grid">
+      <div class="hero-text">
+        <div class="eyebrow">${s.heroEyebrow}</div>
+        <h1>${s.heroTitle}</h1>
+        <p class="lede">${s.heroSubtitle}</p>
+        <div class="cta-row">
+          <a class="btn primary" href="/auth/github/login">${s.heroCtaPrimary}</a>
+          <a class="btn" href="/hongsw/demo">${s.heroCtaSecondary}</a>
+          <a class="btn ghost" href="${REPO}" target="_blank" rel="noopener">${s.heroCtaTertiary}</a>
+        </div>
+        <div class="trust-strip">
+          <span>${s.trustGitHubLike}</span>
+          <span>${s.trustForgeNeutral}</span>
+          <span>${s.trustOpenSource}</span>
+        </div>
+      </div>
+      <div class="hero-mascot">${NAUTI_SVG}</div>
     </div>
     <a class="hero-shot" href="/hongsw/demo">
       <img src="https://raw.githubusercontent.com/baryonlabs/glhub/main/assets/screenshots/viewer-demo.png" alt="${s.heroTitle}" loading="lazy" />
@@ -1134,7 +1217,7 @@ export function landingHtml(lang: Lang = "en"): string {
     <div class="footer-inner">
       <div class="footer-brand">
         <div class="brand">
-          <span class="mark">gl</span>
+          <span class="mark">${NAUTI_MARK_SVG}</span>
           <span>glhub</span>
         </div>
         <div class="footer-tagline">${s.footerTagline}</div>
