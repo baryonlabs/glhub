@@ -291,19 +291,72 @@ export const viewerScript = `
         const stroke = node.id === state.selected ? "#375dfb" : "#cbd5e1";
         const strokeWidth = node.id === state.selected ? "3" : "2";
         const idLabel = node.id.replace(/^gen-/, "");
-        const soulLabel = node.soul ? String(node.soul).slice(0, 22) : "";
-        return '<g role="button" data-id="' + node.id + '" style="cursor:pointer">' +
-          '<rect x="' + (p.x - NODE_W / 2) + '" y="' + (p.y - NODE_H / 2) + '" width="' + NODE_W + '" height="' + NODE_H + '" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" />' +
+        const soulText = node.soul ? String(node.soul) : "";
+        const soulLabel = soulText.slice(0, 22);
+        const aria = idLabel + " · " + t("score") + " " + Number(node.score).toFixed(2) + (soulText ? " · " + soulText : "");
+        const isSelected = node.id === state.selected;
+        return '<g role="button" tabindex="0" aria-label="' + esc(aria) + '" aria-pressed="' + (isSelected ? "true" : "false") + '" data-id="' + node.id + '" class="node-g' + (isSelected ? " is-selected" : "") + '">' +
+          '<title>' + esc(soulText || idLabel) + '</title>' +
+          '<rect class="node-rect" x="' + (p.x - NODE_W / 2) + '" y="' + (p.y - NODE_H / 2) + '" width="' + NODE_W + '" height="' + NODE_H + '" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" />' +
           '<text x="' + p.x + '" y="' + (p.y - 18) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#171a1f">' + esc(idLabel) + '</text>' +
           '<text x="' + p.x + '" y="' + (p.y + 4) + '" text-anchor="middle" font-size="12" fill="#475467">' + t("score") + ' ' + Number(node.score).toFixed(2) + '</text>' +
-          (soulLabel ? '<text x="' + p.x + '" y="' + (p.y + 24) + '" text-anchor="middle" font-size="11" fill="#7a8699">' + esc(soulLabel) + (String(node.soul).length > 22 ? "…" : "") + '</text>' : '') +
+          (soulLabel ? '<text x="' + p.x + '" y="' + (p.y + 24) + '" text-anchor="middle" font-size="11" fill="#7a8699">' + esc(soulLabel) + (soulText.length > 22 ? "…" : "") + '</text>' : '') +
           '</g>';
       }).join("");
-      $("graph").innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" style="display:block">' +
+      const graphEl = $("graph");
+      graphEl.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" style="display:block">' +
         '<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8699"/></marker></defs>' +
         edgeSvg + nodeSvg + '</svg>';
-      for (const el of $("graph").querySelectorAll("g[data-id]")) {
+      const nodeEls = graphEl.querySelectorAll("g[data-id]");
+      const ids = nodes.map((n) => n.id);
+      const focusNode = (id) => {
+        const el = graphEl.querySelector('g[data-id="' + id + '"]');
+        if (el && typeof el.focus === "function") el.focus({ preventScroll: true });
+      };
+      nodeEls.forEach((el) => {
         el.addEventListener("click", () => selectGeneration(el.getAttribute("data-id")));
+        el.addEventListener("keydown", (e) => {
+          const idx = ids.indexOf(el.getAttribute("data-id"));
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectGeneration(el.getAttribute("data-id"));
+          } else if (e.key === "ArrowRight" && idx < ids.length - 1) {
+            e.preventDefault();
+            const nextId = ids[idx + 1];
+            selectGeneration(nextId);
+            focusNode(nextId);
+          } else if (e.key === "ArrowLeft" && idx > 0) {
+            e.preventDefault();
+            const prevId = ids[idx - 1];
+            selectGeneration(prevId);
+            focusNode(prevId);
+          } else if (e.key === "Home" && ids.length > 0) {
+            e.preventDefault();
+            selectGeneration(ids[0]);
+            focusNode(ids[0]);
+          } else if (e.key === "End" && ids.length > 0) {
+            e.preventDefault();
+            selectGeneration(ids[ids.length - 1]);
+            focusNode(ids[ids.length - 1]);
+          }
+        });
+      });
+      if (state.selected && positions.has(state.selected)) {
+        const targetX = positions.get(state.selected).x;
+        const cw = graphEl.clientWidth || 720;
+        const left = Math.max(0, Math.min(width - cw, targetX - cw / 2));
+        const reduceMotion = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const useSmooth = state._graphCentered && !reduceMotion;
+        if (typeof graphEl.scrollTo === "function") {
+          try {
+            graphEl.scrollTo({ left: left, behavior: useSmooth ? "smooth" : "auto" });
+          } catch (_) {
+            graphEl.scrollLeft = left;
+          }
+        } else {
+          graphEl.scrollLeft = left;
+        }
+        state._graphCentered = true;
       }
     }
     function renderEvolution(doc) {

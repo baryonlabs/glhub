@@ -278,6 +278,7 @@ export const viewerStyles = `
       line-height: 1.5;
     }
     .graph {
+      position: relative;
       width: 100%;
       min-height: 240px;
       border: 1px solid var(--line);
@@ -285,9 +286,39 @@ export const viewerStyles = `
       background: #fbfcfe;
       overflow-x: auto;
       overflow-y: hidden;
+      scrollbar-gutter: stable;
     }
     .graph svg {
       max-width: none;
+    }
+    .graph .node-g {
+      cursor: pointer;
+      transition: transform 120ms ease, filter 120ms ease;
+      transform-box: fill-box;
+      transform-origin: center;
+      outline: none;
+    }
+    .graph .node-g:hover .node-rect {
+      filter: brightness(1.04);
+    }
+    .graph .node-g:hover {
+      transform: translateY(-1px);
+    }
+    .graph .node-g:focus-visible .node-rect {
+      stroke: #375dfb;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 0 3px rgba(55, 93, 251, 0.25));
+    }
+    .graph .node-g.is-selected .node-rect {
+      filter: drop-shadow(0 2px 8px rgba(55, 93, 251, 0.18));
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .graph .node-g {
+        transition: none;
+      }
+      .graph .node-g:hover {
+        transform: none;
+      }
     }
     .status-ok { color: var(--good); font-weight: 700; }
     .status-bad { color: var(--bad); font-weight: 700; }
