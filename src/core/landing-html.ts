@@ -192,6 +192,7 @@ const STRINGS: Record<Lang, Strings> = {
     ],
     footerCommunity: "Community",
     footerCommunityLinks: [
+      { label: "baryonlabs", href: "https://baryonlabs.io" },
       { label: "Source on GitHub", href: REPO },
       { label: "glctl CLI", href: "https://github.com/baryonlabs/glctl" },
       { label: "Issues", href: REPO + "/issues" },
@@ -322,6 +323,7 @@ const STRINGS: Record<Lang, Strings> = {
     ],
     footerCommunity: "커뮤니티",
     footerCommunityLinks: [
+      { label: "baryonlabs", href: "https://baryonlabs.io" },
       { label: "GitHub 소스", href: REPO },
       { label: "glctl CLI", href: "https://github.com/baryonlabs/glctl" },
       { label: "이슈", href: REPO + "/issues" },
@@ -452,6 +454,7 @@ const STRINGS: Record<Lang, Strings> = {
     ],
     footerCommunity: "コミュニティ",
     footerCommunityLinks: [
+      { label: "baryonlabs", href: "https://baryonlabs.io" },
       { label: "GitHub のソース", href: REPO },
       { label: "glctl CLI", href: "https://github.com/baryonlabs/glctl" },
       { label: "Issues", href: REPO + "/issues" },
@@ -582,6 +585,7 @@ const STRINGS: Record<Lang, Strings> = {
     ],
     footerCommunity: "社区",
     footerCommunityLinks: [
+      { label: "baryonlabs", href: "https://baryonlabs.io" },
       { label: "GitHub 源码", href: REPO },
       { label: "glctl CLI", href: "https://github.com/baryonlabs/glctl" },
       { label: "Issues", href: REPO + "/issues" },
@@ -1227,7 +1231,7 @@ export function landingHtml(lang: Lang = "en"): string {
       ${renderFooterCol(s.footerLegal, s.footerLegalLinks)}
     </div>
     <div class="footer-bottom">
-      <span>© 2026 baryonlabs · Apache-2.0</span>
+      <span>© 2026 <a href="https://baryonlabs.io" target="_blank" rel="noopener" style="color:#cbd5e1">baryonlabs</a> · <a href="${REPO}/blob/main/LICENSE" target="_blank" rel="noopener" style="color:#cbd5e1">Apache-2.0</a></span>
       <span>v0.1 preview · glhub.baryon.ai</span>
     </div>
   </footer>
