@@ -128,8 +128,8 @@ const STRINGS: Record<Lang, Strings> = {
     howSubtitle: "Three steps from local capture to shared lineage.",
     step1: {
       title: "1. Install glctl",
-      body: "Install the Rust CLI from source (cargo) or download a release binary.",
-      code: "# Requires Rust toolchain — https://rustup.rs\ncargo install --git https://github.com/baryonlabs/glctl",
+      body: "Download the latest binary from GitHub Releases. Or build from source with cargo if you prefer.",
+      code: "# macOS (Apple Silicon)\ncurl -fsSL -o glctl https://github.com/baryonlabs/glctl/releases/latest/download/glctl-aarch64-apple-darwin\nchmod +x glctl && sudo mv glctl /usr/local/bin/\n\n# macOS x86_64 / Linux: see Releases for other targets\n# Build from source: cargo install --git https://github.com/baryonlabs/glctl",
     },
     step2: {
       title: "2. Authenticate",
@@ -285,8 +285,8 @@ const STRINGS: Record<Lang, Strings> = {
     howSubtitle: "로컬 기록부터 공유 lineage까지 세 단계.",
     step1: {
       title: "1. glctl 설치",
-      body: "Rust toolchain으로 소스에서 설치하거나 릴리스 바이너리를 다운로드하세요.",
-      code: "# Rust toolchain 필요 — https://rustup.rs\ncargo install --git https://github.com/baryonlabs/glctl",
+      body: "GitHub Releases에서 최신 바이너리를 받으세요. 직접 빌드하고 싶으면 cargo로 가능.",
+      code: "# macOS (Apple Silicon)\ncurl -fsSL -o glctl https://github.com/baryonlabs/glctl/releases/latest/download/glctl-aarch64-apple-darwin\nchmod +x glctl && sudo mv glctl /usr/local/bin/\n\n# macOS x86_64 / Linux: Releases 페이지에서 해당 타깃 선택\n# 소스 빌드: cargo install --git https://github.com/baryonlabs/glctl",
     },
     step2: {
       title: "2. 인증",
@@ -442,8 +442,8 @@ const STRINGS: Record<Lang, Strings> = {
     howSubtitle: "ローカル記録から共有 lineage まで 3 ステップ。",
     step1: {
       title: "1. glctl をインストール",
-      body: "Rust toolchain でソースからインストール、もしくはリリースバイナリをダウンロード。",
-      code: "# Rust toolchain が必要 — https://rustup.rs\ncargo install --git https://github.com/baryonlabs/glctl",
+      body: "GitHub Releases から最新バイナリをダウンロード。お好みなら cargo でソースからもビルドできます。",
+      code: "# macOS (Apple Silicon)\ncurl -fsSL -o glctl https://github.com/baryonlabs/glctl/releases/latest/download/glctl-aarch64-apple-darwin\nchmod +x glctl && sudo mv glctl /usr/local/bin/\n\n# macOS x86_64 / Linux: Releases ページで対象を選択\n# ソースビルド: cargo install --git https://github.com/baryonlabs/glctl",
     },
     step2: {
       title: "2. 認証",
@@ -599,8 +599,8 @@ const STRINGS: Record<Lang, Strings> = {
     howSubtitle: "从本地记录到共享 lineage 共三步。",
     step1: {
       title: "1. 安装 glctl",
-      body: "用 Rust toolchain 从源码安装，或下载发行版二进制。",
-      code: "# 需要 Rust toolchain — https://rustup.rs\ncargo install --git https://github.com/baryonlabs/glctl",
+      body: "从 GitHub Releases 下载最新二进制。也可以用 cargo 从源码构建。",
+      code: "# macOS (Apple Silicon)\ncurl -fsSL -o glctl https://github.com/baryonlabs/glctl/releases/latest/download/glctl-aarch64-apple-darwin\nchmod +x glctl && sudo mv glctl /usr/local/bin/\n\n# macOS x86_64 / Linux: 在 Releases 页选择对应目标\n# 从源码构建: cargo install --git https://github.com/baryonlabs/glctl",
     },
     step2: {
       title: "2. 认证",
@@ -718,7 +718,46 @@ const LANG_LABELS: Record<Lang, string> = {
   zh: "中文",
 };
 
-const FORGE_BADGES = ["GitHub", "GitLab", "Codeberg", "Forgejo", "Gitea", "Bitbucket"];
+type ForgeEntry = { name: string; url: string; color: string; icon: string };
+
+const FORGES: ForgeEntry[] = [
+  {
+    name: "GitHub",
+    url: "https://github.com",
+    color: "#181717",
+    icon: '<path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>',
+  },
+  {
+    name: "GitLab",
+    url: "https://gitlab.com",
+    color: "#FC6D26",
+    icon: '<path d="M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 00-.867 0L16.418 9.45H7.582L4.919 1.263a.455.455 0 00-.867 0L1.388 9.452.045 13.587a.924.924 0 00.331 1.024L12 23.054l11.624-8.443a.92.92 0 00.331-1.024"/>',
+  },
+  {
+    name: "Codeberg",
+    url: "https://codeberg.org",
+    color: "#2185D0",
+    icon: '<path d="M11.955.49A12 12 0 000 12.49a12 12 0 001.832 6.373L11.838 5.928a.187.187 0 01.324 0l10.006 12.935A12 12 0 0024 12.49a12 12 0 00-12-12 12 12 0 00-.045 0zm.375 6.467l-.375.001a.187.187 0 00-.149.288L18.78 18.91a.187.187 0 00.34-.122L17.13 9.36a.188.188 0 00-.075-.116l-4.6-2.244a.187.187 0 00-.124-.043z"/>',
+  },
+  {
+    name: "Forgejo",
+    url: "https://forgejo.org",
+    color: "#FB923C",
+    icon: '<path d="M16.777 0a4.418 4.418 0 11-3.485 7.142l-2.108-1.61a4.42 4.42 0 00-2.687-.91h-1.49v6.166a7.951 7.951 0 014.766 1.6l2.117 1.612a1.838 1.838 0 002.121.085 4.418 4.418 0 11.78 1.563 4.4 4.4 0 01-1.32-1.022l-2.108-1.61a5.327 5.327 0 00-3.236-1.097H7.007v3.998a4.418 4.418 0 11-2.612 0V5.05a4.418 4.418 0 112.612 0v.876h1.49a7.95 7.95 0 014.812 1.626l2.117 1.612a1.838 1.838 0 102.262-2.853A4.418 4.418 0 0116.777 0z"/>',
+  },
+  {
+    name: "Gitea",
+    url: "https://gitea.com",
+    color: "#609926",
+    icon: '<path d="M4.209 4.603c-.247 0-.525.02-.84.088-.333.07-1.18.394-1.749 1.232-.569.838-.665 2.434.392 4.34 1.057 1.906 3.461 4.227 8.045 6.46.046.022.082.07.082.117v.013l.052 4.082c.005.413.222.794.578 1.005l4.563 2.736a.566.566 0 00.595-.014l4.488-3.044a.566.566 0 00.265-.482V5.005c0-.314-.252-.566-.566-.566H4.21zm15.115 1.13v15.027L15.5 17.4 11.65 14.93l3.85-2.474 3.974-2.547V5.733z"/>',
+  },
+  {
+    name: "Bitbucket",
+    url: "https://bitbucket.org",
+    color: "#0052CC",
+    icon: '<path d="M.778 1.213a.768.768 0 00-.768.892l3.263 19.81c.084.5.515.868 1.022.873H19.95a.772.772 0 00.77-.646l3.27-20.03a.768.768 0 00-.768-.891zM14.52 15.53H9.522L8.17 8.466h7.561z"/>',
+  },
+];
 
 // Nauti — the Nautilus-shell mascot. Chambers in the shell metaphorically
 // stand for generations in a lineage. Single eye peeks out of the latest
@@ -807,7 +846,10 @@ export function landingHtml(lang: Lang = "en"): string {
     })
     .join("");
 
-  const forgeBadges = FORGE_BADGES.map((name) => `<span class="forge-badge">${name}</span>`).join("");
+  const forgeBadges = FORGES.map(
+    (f) =>
+      `<a class="forge-badge" href="${f.url}" target="_blank" rel="noopener" style="--forge-color: ${f.color}"><svg class="forge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${f.icon}</svg><span>${f.name}</span></a>`,
+  ).join("");
 
   const renderStep = (step: Step, n: number) => `
     <div class="step">
@@ -1154,13 +1196,35 @@ export function landingHtml(lang: Lang = "en"): string {
       margin-top: 16px;
     }
     .forge-badge {
-      padding: 8px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 8px 12px;
       border-radius: 999px;
-      background: #f1f4f8;
+      background: #fff;
       font-size: 13px;
       font-weight: 600;
       color: var(--ink-soft);
       border: 1px solid var(--line);
+      text-decoration: none;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .forge-badge:hover {
+      transform: translateY(-2px);
+      border-color: var(--forge-color);
+      box-shadow: 0 8px 16px -8px var(--forge-color);
+      color: var(--forge-color);
+      text-decoration: none;
+    }
+    .forge-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--forge-color);
+      flex-shrink: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .forge-badge { transition: none; }
+      .forge-badge:hover { transform: none; }
     }
 
     /* ---- open core ---- */
