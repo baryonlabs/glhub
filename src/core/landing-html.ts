@@ -1325,6 +1325,24 @@ export function landingHtml(lang: Lang = "en"): string {
     </div>
   </section>
 
+  <section class="validation" id="validation">
+    <h2>${s.validationTitle}</h2>
+    <p class="lede">${s.validationSubtitle}</p>
+    <div class="validation-grid">
+      ${s.validationRules
+        .map(
+          (r) => `
+      <div class="val-card">
+        <div class="val-icon">${r.icon}</div>
+        <h3>${r.title}</h3>
+        <p>${r.body}</p>
+      </div>`,
+        )
+        .join("")}
+    </div>
+    <p class="validation-link"><a href="${REPO}/blob/main/docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05" target="_blank" rel="noopener">${s.validationLinkLabel} →</a></p>
+  </section>
+
   <section class="how" id="how">
     <h2>${s.howTitle}</h2>
     <p class="lede">${s.howSubtitle}</p>
@@ -1349,24 +1367,6 @@ export function landingHtml(lang: Lang = "en"): string {
       ${renderTier(s.tierCloud, "cloud")}
       ${renderTier(s.tierEnterprise, "enterprise")}
     </div>
-  </section>
-
-  <section class="validation" id="validation">
-    <h2>${s.validationTitle}</h2>
-    <p class="lede">${s.validationSubtitle}</p>
-    <div class="validation-grid">
-      ${s.validationRules
-        .map(
-          (r) => `
-      <div class="val-card">
-        <div class="val-icon">${r.icon}</div>
-        <h3>${r.title}</h3>
-        <p>${r.body}</p>
-      </div>`,
-        )
-        .join("")}
-    </div>
-    <p class="validation-link"><a href="${REPO}/blob/main/docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05" target="_blank" rel="noopener">${s.validationLinkLabel} →</a></p>
   </section>
 
   <section class="bottom-cta">
