@@ -59,6 +59,11 @@ type Strings = {
   tierCloud: Tier;
   tierEnterprise: Tier;
 
+  validationTitle: string;
+  validationSubtitle: string;
+  validationRules: { icon: string; title: string; body: string }[];
+  validationLinkLabel: string;
+
   bottomCtaTitle: string;
   bottomCtaBody: string;
   bottomCtaPrimary: string;
@@ -178,6 +183,32 @@ const STRINGS: Record<Lang, Strings> = {
         "Air-gapped on-prem package",
       ],
     },
+    validationTitle: "Validated by default",
+    validationSubtitle:
+      "Every push is checked against the spec. Bad payloads get <code>HTTP 422</code> with a human-readable <code>errors[]</code> list — the lineage stays clean.",
+    validationRules: [
+      {
+        icon: "📊",
+        title: "Score guard: (0, 1]",
+        body: "Each <code>metrics.score</code> must be a finite number greater than 0 and at most 1. <strong>Score 0 is rejected</strong> — it indicates no actual evaluation. For failed runs, set <code>success: false</code> instead.",
+      },
+      {
+        icon: "🆔",
+        title: "ID format",
+        body: "Every <code>id</code>, <code>parent_id</code>, and relation endpoint must match <code>gen-YYYYMMDD-NNN</code>. Duplicates within a single push are rejected.",
+      },
+      {
+        icon: "🔗",
+        title: "Self-contained snapshots",
+        body: "Each <code>relations[i].from</code> and <code>to</code> must resolve to a generation in the same payload. Cross-snapshot references are rejected.",
+      },
+      {
+        icon: "🔒",
+        title: "Schema version lock",
+        body: "Only <code>glhub-push/v1</code> is accepted today. Future versions ship with a documented migration plan before the writer flips.",
+      },
+    ],
+    validationLinkLabel: "See the full rule table in SPEC §2.2.1",
     bottomCtaTitle: "Try the live demo",
     bottomCtaBody:
       "10 generations, all fields populated. See how glhub presents AI evolution as a readable document instead of raw payloads.",
@@ -309,6 +340,32 @@ const STRINGS: Record<Lang, Strings> = {
         "에어갭 on-prem 패키지",
       ],
     },
+    validationTitle: "기본으로 검증됩니다",
+    validationSubtitle:
+      "모든 push는 스펙 대조를 거칩니다. 부적합한 페이로드는 <code>HTTP 422</code>와 사람이 읽을 수 있는 <code>errors[]</code> 리스트를 받습니다 — lineage가 깨끗하게 유지돼요.",
+    validationRules: [
+      {
+        icon: "📊",
+        title: "점수 가드: (0, 1]",
+        body: "각 <code>metrics.score</code>는 0보다 크고 1 이하의 유한 숫자여야 합니다. <strong>점수 0은 거부</strong> — 실제 평가를 안 했다는 뜻이기 때문이에요. 실패한 실행은 <code>success: false</code>를 쓰세요.",
+      },
+      {
+        icon: "🆔",
+        title: "ID 형식",
+        body: "모든 <code>id</code>, <code>parent_id</code>, relation 엔드포인트는 <code>gen-YYYYMMDD-NNN</code> 형식을 따라야 합니다. 한 push 안에서 중복은 거부됩니다.",
+      },
+      {
+        icon: "🔗",
+        title: "자기완결 스냅샷",
+        body: "각 <code>relations[i].from</code>과 <code>to</code>는 같은 payload 안의 generation을 가리켜야 합니다. 다른 스냅샷 참조는 거부.",
+      },
+      {
+        icon: "🔒",
+        title: "스키마 버전 잠금",
+        body: "현재는 <code>glhub-push/v1</code>만 허용. 다음 버전은 writer가 바뀌기 전에 마이그레이션 플랜이 문서화된 상태로 출시됩니다.",
+      },
+    ],
+    validationLinkLabel: "SPEC §2.2.1에서 전체 규칙 표 보기",
     bottomCtaTitle: "라이브 데모 열기",
     bottomCtaBody:
       "모든 필드가 채워진 10세대 demo. raw payload 대신 읽을 수 있는 문서로 AI 진화가 어떻게 보이는지 확인하세요.",
@@ -440,6 +497,32 @@ const STRINGS: Record<Lang, Strings> = {
         "エアギャップ on-prem パッケージ",
       ],
     },
+    validationTitle: "デフォルトで検証されます",
+    validationSubtitle:
+      "全ての push は仕様と照合されます。不正なペイロードは <code>HTTP 422</code> と人間が読める <code>errors[]</code> を返します — lineage は綺麗に保たれます。",
+    validationRules: [
+      {
+        icon: "📊",
+        title: "スコアガード: (0, 1]",
+        body: "各 <code>metrics.score</code> は 0 より大きく 1 以下の有限数。<strong>スコア 0 は拒否</strong> — 評価を実際に行っていないことを意味するためです。失敗した実行は <code>success: false</code> を使ってください。",
+      },
+      {
+        icon: "🆔",
+        title: "ID 形式",
+        body: "全ての <code>id</code>, <code>parent_id</code>, relation エンドポイントは <code>gen-YYYYMMDD-NNN</code> に一致する必要があります。1 push 内の重複は拒否。",
+      },
+      {
+        icon: "🔗",
+        title: "自己完結スナップショット",
+        body: "各 <code>relations[i].from</code> と <code>to</code> は同じ payload 内の generation を指す必要があります。他スナップショットへの参照は拒否。",
+      },
+      {
+        icon: "🔒",
+        title: "スキーマバージョンロック",
+        body: "現在は <code>glhub-push/v1</code> のみ許可。次バージョンは writer が切り替わる前にマイグレーション計画を文書化した状態でリリースされます。",
+      },
+    ],
+    validationLinkLabel: "SPEC §2.2.1 で全ルール表を見る",
     bottomCtaTitle: "ライブデモを開く",
     bottomCtaBody:
       "全フィールドが埋まった 10 世代 demo。生 payload ではなく、読めるドキュメントとして AI 進化がどう見えるかを確認できます。",
@@ -571,6 +654,32 @@ const STRINGS: Record<Lang, Strings> = {
         "气隙 on-prem 包",
       ],
     },
+    validationTitle: "默认验证",
+    validationSubtitle:
+      "每个 push 都对照规范检查。不合规载荷会返回 <code>HTTP 422</code> 和人类可读的 <code>errors[]</code> — lineage 保持干净。",
+    validationRules: [
+      {
+        icon: "📊",
+        title: "分数门槛: (0, 1]",
+        body: "每个 <code>metrics.score</code> 必须是大于 0 且小于等于 1 的有限数。<strong>分数 0 会被拒绝</strong> — 它表示根本没做评估。失败运行请用 <code>success: false</code>。",
+      },
+      {
+        icon: "🆔",
+        title: "ID 格式",
+        body: "所有 <code>id</code>、<code>parent_id</code>、关系端点都必须匹配 <code>gen-YYYYMMDD-NNN</code>。同一个 push 内重复会被拒绝。",
+      },
+      {
+        icon: "🔗",
+        title: "自包含快照",
+        body: "每个 <code>relations[i].from</code> 和 <code>to</code> 必须解析到同一 payload 中的 generation。跨快照引用会被拒绝。",
+      },
+      {
+        icon: "🔒",
+        title: "Schema 版本锁",
+        body: "目前仅接受 <code>glhub-push/v1</code>。后续版本会在 writer 切换前文档化迁移计划。",
+      },
+    ],
+    validationLinkLabel: "在 SPEC §2.2.1 查看完整规则表",
     bottomCtaTitle: "打开实时演示",
     bottomCtaBody:
       "所有字段都填满的 10 世代 demo。看 glhub 如何把 AI 演化呈现为可读文档而不是裸 payload。",
@@ -1069,6 +1178,39 @@ export function landingHtml(lang: Lang = "en"): string {
     .tier-tag { font-size: 12px; color: var(--muted); font-weight: 600; }
     .tier ul { margin: 0; padding-left: 18px; line-height: 1.85; font-size: 14px; color: var(--ink-soft); }
 
+    /* ---- validation ---- */
+    .validation { background: #fff; border-top: 1px solid var(--line); }
+    .validation-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+    @media (max-width: 720px) { .validation-grid { grid-template-columns: 1fr; } }
+    .val-card {
+      padding: 22px;
+      background: #fbfcfe;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .val-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #eef4ff;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+    .val-card h3 { margin-bottom: 4px; }
+    .val-card p { font-size: 14px; line-height: 1.55; margin: 0; color: var(--ink-soft); }
+    .val-card code { background: #eef1f6; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+    .validation-link { margin-top: 24px; font-size: 14px; }
+
     /* ---- bottom cta ---- */
     .bottom-cta {
       background: var(--accent);
@@ -1136,6 +1278,7 @@ export function landingHtml(lang: Lang = "en"): string {
         <a href="#how">${s.navHow}</a>
         <a href="#forges">${s.navForges}</a>
         <a href="#open-core">${s.navOpenCore}</a>
+        <a href="#validation">${s.htmlLang === "ko" ? "검증" : s.htmlLang === "ja" ? "検証" : s.htmlLang === "zh-CN" ? "验证" : "Validation"}</a>
         <a href="${REPO}" target="_blank" rel="noopener">${s.navSource}</a>
         <a href="/hongsw/demo">${s.navDemo}</a>
       </nav>
@@ -1206,6 +1349,24 @@ export function landingHtml(lang: Lang = "en"): string {
       ${renderTier(s.tierCloud, "cloud")}
       ${renderTier(s.tierEnterprise, "enterprise")}
     </div>
+  </section>
+
+  <section class="validation" id="validation">
+    <h2>${s.validationTitle}</h2>
+    <p class="lede">${s.validationSubtitle}</p>
+    <div class="validation-grid">
+      ${s.validationRules
+        .map(
+          (r) => `
+      <div class="val-card">
+        <div class="val-icon">${r.icon}</div>
+        <h3>${r.title}</h3>
+        <p>${r.body}</p>
+      </div>`,
+        )
+        .join("")}
+    </div>
+    <p class="validation-link"><a href="${REPO}/blob/main/docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05" target="_blank" rel="noopener">${s.validationLinkLabel} →</a></p>
   </section>
 
   <section class="bottom-cta">

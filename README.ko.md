@@ -391,6 +391,20 @@ glctl push --remote https://glhub.baryon.ai     # hosted, `glctl login` 필요
 glctl push --remote http://127.0.0.1:3201       # self-host, 인증 없음
 ```
 
+### Push Payload 검증
+
+`POST /api/push`는 들어오는 모든 페이로드를 스펙과 대조합니다. 부적합 페이로드는 HTTP `422`와 사람이 읽을 수 있는 `errors[]`를 받아 lineage가 깨끗하게 유지돼요.
+
+핵심 규칙:
+
+- `metrics.score`는 `(0, 1]` 범위의 유한 숫자여야 합니다. **점수 0은 거부** — 실제 평가를 안 했다는 뜻이기 때문이에요. 실패한 실행은 `metrics.success: false`를 쓰세요.
+- 각 `id`, `parent_id`, relation 엔드포인트는 `gen-YYYYMMDD-NNN` 형식이어야 합니다. 한 push 안에서 id 중복은 거부.
+- 각 `relations[i].from`과 `to`는 같은 payload 안의 generation을 가리켜야 합니다. 다른 스냅샷 참조는 거부.
+- 현재는 `schema_version: "glhub-push/v1"`만 허용. 다음 버전은 마이그레이션 플랜이 문서화된 채로 출시됩니다.
+
+전체 규칙 표: [docs/SPEC.md §2.2.1](docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05).
+점수 0 거부 사유: [docs/SCORING.md](docs/SCORING.md#server-side-enforcement-since-2026-05-05).
+
 ## R2 Storage
 
 glhub는 S3-compatible API를 통해 Cloudflare R2를 지원합니다.
