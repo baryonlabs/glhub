@@ -33,6 +33,16 @@ every generation pair:
 - **Time series** — generations are timestamped, so the lineage IS the
   score history
 
+## Server-side enforcement (since 2026-05-05)
+
+`POST /api/push` rejects (HTTP 422) any payload where a generation has
+`metrics.score == 0`, `score > 1`, or no score at all. The error message
+points the caller back here so they understand *why* score=0 is treated as
+invalid rather than as "very poor result". Use `metrics.success: false` for
+failed runs; reserve `score` for a positive evaluation in `(0, 1]`.
+
+See `docs/SPEC.md §2.2.1` for the full validation rule table.
+
 ## What is NOT tracked
 
 By design, glhub OSS does not enforce:

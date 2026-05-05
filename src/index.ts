@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {
   COMPANY_ID_RE,
   GENERATION_ID_RE,
@@ -17,10 +17,12 @@ import {
   evolutionDocumentFromPush,
   generationsFromPush,
   lineageFromPush,
+  normalizePushPayload,
   pushId,
   showFromPush,
 } from "./core/push-fallback.js";
 import { indexHtml } from "./core/viewer.js";
+import { validatePushPayload } from "./core/validation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
@@ -114,18 +116,27 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
-async function storePush(payload: PushPayload): Promise<{ driver: string; key: string; latest_key: string }> {
+async function storePush(payload: PushPayload): Promise<{ driver: string; key: string; latest_key: string; idempotent: boolean }> {
   const companyId = typeof payload.company_id === "string" ? payload.company_id : "";
   if (!COMPANY_ID_RE.test(companyId)) {
     throw Object.assign(new Error("Invalid company_id in push payload"), { statusCode: 400 });
   }
   const pushedAt = typeof payload.pushed_at === "string" ? payload.pushed_at : new Date().toISOString();
-  const id = pushId(companyId, pushedAt);
-  const body = JSON.stringify({ ...payload, pushed_at: pushedAt }, null, 2);
-  const key = `${r2Prefix}/pushes/${companyId}/${id}.json`;
-  const latestKey = `${r2Prefix}/pushes/${companyId}/latest.json`;
+  const id =
+    typeof payload.push_id === "string" && payload.push_id.trim()
+      ? payload.push_id.replace(/[^0-9A-Za-z_-]/g, "-")
+      : pushId(companyId, pushedAt);
 
   if (r2Client) {
+    const key = `${r2Prefix}/pushes/${companyId}/${id}.json`;
+    const latestKey = `${r2Prefix}/pushes/${companyId}/latest.json`;
+    try {
+      await r2Client.send(new HeadObjectCommand({ Bucket: r2Bucket, Key: key }));
+      return { driver: "r2", key, latest_key: latestKey, idempotent: true };
+    } catch {
+      // object does not exist — proceed to write
+    }
+    const body = JSON.stringify({ ...payload, pushed_at: pushedAt }, null, 2);
     await r2Client.send(
       new PutObjectCommand({
         Bucket: r2Bucket,
@@ -142,16 +153,20 @@ async function storePush(payload: PushPayload): Promise<{ driver: string; key: s
         ContentType: "application/json; charset=utf-8",
       }),
     );
-    return { driver: "r2", key, latest_key: latestKey };
+    return { driver: "r2", key, latest_key: latestKey, idempotent: false };
   }
 
   const localRoot = path.join(glhubDataDir, "pushes", companyId);
   await mkdir(localRoot, { recursive: true });
   const localPath = path.join(localRoot, `${id}.json`);
   const latestPath = path.join(localRoot, "latest.json");
+  if (existsSync(localPath)) {
+    return { driver: "local", key: localPath, latest_key: latestPath, idempotent: true };
+  }
+  const body = JSON.stringify({ ...payload, pushed_at: pushedAt }, null, 2);
   await writeFile(localPath, body, "utf-8");
   await writeFile(latestPath, body, "utf-8");
-  return { driver: "local", key: localPath, latest_key: latestPath };
+  return { driver: "local", key: localPath, latest_key: latestPath, idempotent: false };
 }
 
 async function streamToString(body: unknown): Promise<string> {
@@ -176,7 +191,7 @@ async function readLatestPush(companyId: string): Promise<PushPayload | null> {
     try {
       const result = await r2Client.send(new GetObjectCommand({ Bucket: r2Bucket, Key: key }));
       const body = await streamToString(result.Body);
-      return JSON.parse(body) as PushPayload;
+      return normalizePushPayload(JSON.parse(body) as PushPayload);
     } catch (err) {
       const name = err && typeof err === "object" && "name" in err ? String((err as { name: unknown }).name) : "";
       if (name === "NoSuchKey" || name === "NotFound") return null;
@@ -185,7 +200,7 @@ async function readLatestPush(companyId: string): Promise<PushPayload | null> {
   }
   const latestPath = path.join(glhubDataDir, "pushes", companyId, "latest.json");
   try {
-    return JSON.parse(await readFile(latestPath, "utf-8")) as PushPayload;
+    return normalizePushPayload(JSON.parse(await readFile(latestPath, "utf-8")) as PushPayload);
   } catch (err) {
     const code = err && typeof err === "object" && "code" in err ? String((err as { code: unknown }).code) : "";
     if (code === "ENOENT" || code === "ENOTDIR") return null;
@@ -426,6 +441,20 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
   }
   if (req.method === "POST" && url.pathname === "/api/push") {
     const payload = (await readBody(req)) as PushPayload;
+    const validation = validatePushPayload(payload);
+    if (!validation.ok) {
+      json(
+        res,
+        {
+          error: "payload validation failed",
+          schema_version: "glhub-push/v1",
+          errors: validation.errors,
+          docs: "https://github.com/baryonlabs/glhub/blob/main/docs/SPEC.md#22-pushpayload",
+        },
+        422,
+      );
+      return;
+    }
     const generations = Array.isArray(payload.generations) ? payload.generations.length : 0;
     const relations = Array.isArray(payload.relations) ? payload.relations.length : 0;
     const stored = await storePush(payload);
@@ -438,7 +467,7 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
         relations,
         storage: stored,
       },
-      201,
+      stored.idempotent ? 200 : 201,
     );
     return;
   }

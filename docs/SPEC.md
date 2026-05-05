@@ -104,9 +104,10 @@ type GenerationRecord = {
 
 ```ts
 type PushPayload = {
-  schema_version: "glhub-push/v1";
-  company_id: string;             // matches /^[A-Za-z0-9_-]+$/
-  pushed_at: string;              // ISO 8601 UTC
+  schema_version?: "glhub-push/v1";  // missing → treated as "glhub-push/v1" by normalizePushPayload()
+  company_id: string;                 // matches /^[A-Za-z0-9_-]+$/
+  push_id?: string;                   // client-supplied idempotency key; sanitized to [A-Za-z0-9_-]
+  pushed_at: string;                  // ISO 8601 UTC
   status?: { /* ... */ };
   lineage?: { nodes: ...; edges: ... };
   generations: GenerationRecord[];
@@ -358,11 +359,43 @@ Provider is auto-inferred from URL host (see `core/forge-link.ts`):
    (readers must default missing fields).
 3. Renaming, type-changing, or removing fields requires:
    - a new version (`v{n+1}`)
-   - documented migration path in this file
+   - documented migration path in this file (see §6.2)
    - reader code that accepts both `v{n}` and `v{n+1}`
    - a published cutover date before the writer flips to `v{n+1}`
 4. The `schema-keeper` agent owns this policy. Other keepers must request
    sign-off before introducing schema changes.
+
+### 6.1 Reader fallback implementation
+
+`src/core/push-fallback.ts` exports `normalizePushPayload(payload)`. Every
+read path that deserialises a stored `PushPayload` **must** pass the raw object
+through this function before returning it to callers. The function fills in
+`schema_version: "glhub-push/v1"` when the field is absent or empty, ensuring
+old documents are transparently upgraded in memory without any writes.
+
+Call sites (kept in sync):
+- `src/worker.ts` `readLatestPush` — R2 binding path
+- `src/index.ts` `readLatestPush` — S3 SDK + local fs paths
+
+### 6.2 Migration script convention
+
+When a schema bump to `v{n+1}` is required, a one-shot migration script must
+be placed at:
+
+```
+docs/migrations/glhub-{kind}-v{n}-to-v{n+1}.ts
+```
+
+The script must be idempotent (safe to run twice), accept `--dry-run`, and
+output a count of objects rewritten. It runs against the self-host data
+directory or an S3-compatible endpoint. No migration scripts are required until
+a schema bump occurs.
+
+Currently documented migration paths:
+
+| Migration | Script path | Status |
+|---|---|---|
+| `glhub-push` v1 → v2 | `docs/migrations/glhub-push-v1-to-v2.ts` | not yet needed |
 
 Currently active versions:
 
@@ -372,6 +405,32 @@ Currently active versions:
 | `glhub-owner` | v1 | `ed178af` |
 | `glhub-forge-link` | v1 | `ed178af` |
 | `glhub-webhook` | v1 | `ed178af` |
+
+### 2.2.1 Push payload validation rules (server-side, since 2026-05-05)
+
+`POST /api/push` rejects with HTTP 422 when any rule fails. Response body
+includes `error: "payload validation failed"` and `errors[]` with one human
+message per violation.
+
+| Rule | Why |
+|---|---|
+| `schema_version` (if present) must equal `glhub-push/v1` | reject unknown schema rather than silently store |
+| `company_id` required, matches `[A-Za-z0-9_-]+` | route key safety |
+| `pushed_at` (if present) ISO 8601 | downstream parsing safety |
+| `generations[]` required (may be empty) | enforce array shape |
+| each `generations[i].id` matches `gen-YYYYMMDD-NNN` | viewer / lineage assumptions |
+| each `generations[i].metrics.score` is a finite number, `> 0`, `≤ 1` | **0 indicates "no actual evaluation done" — see `docs/SCORING.md`** |
+| each `generations[i].parent_id` (if present) matches `gen-YYYYMMDD-NNN` | edge integrity |
+| each `generations[i].metrics.success` (if present) boolean | type safety |
+| `generations[i].id` unique within payload | no duplicate inside one snapshot |
+| `relations[]` required (may be empty) | enforce array shape |
+| each `relations[i].from`, `to` match `gen-YYYYMMDD-NNN` | edge integrity |
+| each `relations[i].relation_type` non-empty string | semantic edge label |
+| each `relations[i].from`, `to` resolves to a generation in the same payload | snapshot is self-contained |
+
+Implementation: `src/core/validation.ts` (pure module, ~150 lines). Both Node
+self-host and Workers entry call it before `storePush`. Existing demo and
+experiment data already pass — score=0 was never used, ids always conformed.
 
 ---
 

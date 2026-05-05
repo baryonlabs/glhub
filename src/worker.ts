@@ -9,6 +9,7 @@ import {
 import {
   evolutionDocumentFromPush,
   lineageFromPush,
+  normalizePushPayload,
   pushId,
   showFromPush,
 } from "./core/push-fallback.js";
@@ -38,6 +39,7 @@ import { safeKeySegment } from "./core/github-webhook.js";
 import { profileHtml, type OwnerProjectEntry } from "./core/profile-html.js";
 import { inferProvider, type ForgeLink } from "./core/forge-link.js";
 import { detectLang, landingHtml } from "./core/landing-html.js";
+import { validatePushPayload } from "./core/validation.js";
 import { GitHubAdapter, GitLabAdapter, ForgejoAdapter, type ForgeAdapter } from "./connectors/index.js";
 
 export interface Env {
@@ -126,7 +128,7 @@ async function readLatestPush(env: Env, companyId: string): Promise<PushPayload 
   const key = `${prefixOf(env)}/pushes/${companyId}/latest.json`;
   const body = await r2GetText(env, key);
   if (!body) return null;
-  return JSON.parse(body) as PushPayload;
+  return normalizePushPayload(JSON.parse(body) as PushPayload);
 }
 
 async function pushedFallback(env: Env, companyId: string): Promise<PushPayload> {
@@ -171,21 +173,28 @@ async function claimOwner(
 async function storePush(
   env: Env,
   payload: PushPayload,
-): Promise<{ driver: string; key: string; latest_key: string }> {
+): Promise<{ driver: string; key: string; latest_key: string; idempotent: boolean }> {
   const companyId = typeof payload.company_id === "string" ? payload.company_id : "";
   if (!COMPANY_ID_RE.test(companyId)) {
     throw new HttpError("Invalid company_id in push payload", 400);
   }
   const pushedAt =
     typeof payload.pushed_at === "string" ? payload.pushed_at : new Date().toISOString();
-  const id = pushId(companyId, pushedAt);
-  const body = JSON.stringify({ ...payload, pushed_at: pushedAt }, null, 2);
+  const id =
+    typeof payload.push_id === "string" && payload.push_id.trim()
+      ? payload.push_id.replace(/[^0-9A-Za-z_-]/g, "-")
+      : pushId(companyId, pushedAt);
   const prefix = prefixOf(env);
   const key = `${prefix}/pushes/${companyId}/${id}.json`;
   const latestKey = `${prefix}/pushes/${companyId}/latest.json`;
+  const exists = await env.GLHUB_R2.head(key);
+  if (exists) {
+    return { driver: "r2-binding", key, latest_key: latestKey, idempotent: true };
+  }
+  const body = JSON.stringify({ ...payload, pushed_at: pushedAt }, null, 2);
   await r2PutJson(env, key, body);
   await r2PutJson(env, latestKey, body);
-  return { driver: "r2-binding", key, latest_key: latestKey };
+  return { driver: "r2-binding", key, latest_key: latestKey, idempotent: false };
 }
 
 async function listCompanies(env: Env): Promise<string[]> {
@@ -645,6 +654,18 @@ async function route(request: Request, env: Env): Promise<Response> {
     } catch {
       return jsonResponse({ error: "invalid JSON body" }, 400);
     }
+    const validation = validatePushPayload(payload);
+    if (!validation.ok) {
+      return jsonResponse(
+        {
+          error: "payload validation failed",
+          schema_version: "glhub-push/v1",
+          errors: validation.errors,
+          docs: "https://github.com/baryonlabs/glhub/blob/main/docs/SPEC.md#22-pushpayload",
+        },
+        422,
+      );
+    }
     const companyId = typeof payload.company_id === "string" ? payload.company_id : "";
     if (!COMPANY_ID_RE.test(companyId)) {
       return jsonResponse({ error: "Invalid company_id" }, 400);
@@ -675,7 +696,7 @@ async function route(request: Request, env: Env): Promise<Response> {
         owner_login: auth.login,
         storage: stored,
       },
-      201,
+      stored.idempotent ? 200 : 201,
     );
   }
 
