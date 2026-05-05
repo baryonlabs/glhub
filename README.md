@@ -554,6 +554,27 @@ glctl push --remote https://glhub.baryon.ai     # hosted, needs `glctl login`
 glctl push --remote http://127.0.0.1:3201       # self-host, no auth
 ```
 
+### Push Payload Validation
+
+`POST /api/push` checks every payload against the spec. Bad payloads get
+HTTP `422` with a human-readable `errors[]` array — the lineage stays
+clean.
+
+Key rules:
+
+- `metrics.score` must be a finite number in `(0, 1]`. **Score 0 is
+  rejected** — it indicates no actual evaluation. For failed runs, set
+  `metrics.success: false`.
+- Each `id`, `parent_id`, and relation endpoint must match
+  `gen-YYYYMMDD-NNN`. Duplicate ids within one push are rejected.
+- Each `relations[i].from` and `to` must resolve to a generation in the
+  same payload. Cross-snapshot references are rejected.
+- Only `schema_version: "glhub-push/v1"` is accepted today. Future
+  versions ship with a documented migration plan.
+
+Full rule table: [docs/SPEC.md §2.2.1](docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05).
+Why score=0 is rejected: [docs/SCORING.md](docs/SCORING.md#server-side-enforcement-since-2026-05-05).
+
 Payload:
 
 ```json

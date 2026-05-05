@@ -274,6 +274,20 @@ POST /api/push
 glctl push --remote http://127.0.0.1:3201
 ```
 
+### Push 载荷验证
+
+`POST /api/push` 会对每个接收的载荷做规范检查。不合规载荷会返回 HTTP `422` 和人类可读的 `errors[]` — lineage 保持干净。
+
+关键规则：
+
+- `metrics.score` 必须是 `(0, 1]` 的有限数。**分数 0 会被拒绝** — 它表示根本没做评估。失败运行请用 `metrics.success: false`。
+- 每个 `id`、`parent_id` 和关系端点都必须匹配 `gen-YYYYMMDD-NNN`。同一个 push 内的 id 重复会被拒绝。
+- 每个 `relations[i].from` 和 `to` 必须解析到同一 payload 中的 generation。跨快照引用会被拒绝。
+- 目前仅接受 `schema_version: "glhub-push/v1"`。后续版本会在迁移计划文档化后才发布。
+
+完整规则表：[docs/SPEC.md §2.2.1](docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05).
+为什么分数 0 会被拒绝：[docs/SCORING.md](docs/SCORING.md#server-side-enforcement-since-2026-05-05).
+
 ## R2 Storage
 
 glhub 通过 S3-compatible API 支持 Cloudflare R2。

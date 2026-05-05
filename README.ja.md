@@ -277,6 +277,20 @@ POST /api/push
 glctl push --remote http://127.0.0.1:3201
 ```
 
+### Push ペイロード検証
+
+`POST /api/push` は受け取るすべてのペイロードを仕様と照合します。不正なペイロードは HTTP `422` と人間が読める `errors[]` を返し、lineage は綺麗に保たれます。
+
+主要ルール:
+
+- `metrics.score` は `(0, 1]` の有限数。**スコア 0 は拒否** — 評価を実際に行っていないことを意味するためです。失敗した実行は `metrics.success: false` を使ってください。
+- 各 `id`、`parent_id`、relation エンドポイントは `gen-YYYYMMDD-NNN` に一致する必要があります。1 push 内での id 重複は拒否。
+- 各 `relations[i].from` と `to` は同じ payload 内の generation を指す必要があります。他スナップショットへの参照は拒否。
+- 現在は `schema_version: "glhub-push/v1"` のみ許可。次バージョンはマイグレーション計画が文書化された状態でリリースされます。
+
+全ルール表: [docs/SPEC.md §2.2.1](docs/SPEC.md#221-push-payload-validation-rules-server-side-since-2026-05-05).
+スコア 0 が拒否される理由: [docs/SCORING.md](docs/SCORING.md#server-side-enforcement-since-2026-05-05).
+
 ## R2 Storage
 
 glhub は S3-compatible API を通じて Cloudflare R2 をサポートします。
