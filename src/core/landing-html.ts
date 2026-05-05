@@ -1193,21 +1193,35 @@ export function landingHtml(lang: Lang = "en"): string {
       border: 1px solid var(--line);
       border-radius: 12px;
       display: grid;
-      grid-template-columns: 38px 1fr;
-      gap: 14px;
+      grid-template-columns: 44px minmax(0, 1fr);
+      column-gap: 14px;
+      row-gap: 6px;
       align-items: start;
     }
     .val-icon {
-      width: 38px;
-      height: 38px;
+      grid-row: 1 / span 2;
+      width: 44px;
+      height: 44px;
       border-radius: 10px;
       background: #eef4ff;
       display: grid;
       place-items: center;
-      font-size: 18px;
+      font-size: 22px;
+      line-height: 1;
     }
-    .val-card h3 { margin-bottom: 4px; }
-    .val-card p { font-size: 14px; line-height: 1.55; margin: 0; color: var(--ink-soft); }
+    .val-card h3 {
+      grid-column: 2;
+      margin: 0;
+      font-size: 16px;
+      align-self: end;
+    }
+    .val-card p {
+      grid-column: 2;
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+    }
     .val-card code { background: #eef1f6; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
     .validation-link { margin-top: 24px; font-size: 14px; }
 
