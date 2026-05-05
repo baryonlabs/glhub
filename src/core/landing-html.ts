@@ -1098,12 +1098,13 @@ export function landingHtml(lang: Lang = "en"): string {
     @media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
     .step {
       display: grid;
-      grid-template-columns: 36px 1fr;
+      grid-template-columns: 36px minmax(0, 1fr);
       gap: 12px;
       padding: 22px;
       background: #fff;
       border: 1px solid var(--line);
       border-radius: 12px;
+      min-width: 0;
     }
     .step-num {
       width: 32px;
@@ -1116,6 +1117,12 @@ export function landingHtml(lang: Lang = "en"): string {
       font-weight: 800;
       font-size: 14px;
     }
+    .step-body {
+      min-width: 0;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
     .step h3 { margin-bottom: 4px; }
     .step p { font-size: 14px; margin-bottom: 12px; }
     .step pre {
@@ -1127,7 +1134,11 @@ export function landingHtml(lang: Lang = "en"): string {
       font-size: 12.5px;
       line-height: 1.6;
       margin: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
     }
+    .step pre code { display: block; white-space: pre; }
     .step code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
     /* ---- forges ---- */
